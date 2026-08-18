@@ -99,10 +99,24 @@ Blue Dot Sessions is free, CC-licensed, and close to the intended sound.
 
 ## Cover photography
 
-With `UNSPLASH_ACCESS_KEY` set, `npm run art` pulls a source photo and applies
-a duotone. Unsplash requires photographer attribution — the pipeline records it
-and writes it into the episode notes automatically. Generated covers are
-gitignored.
+Optional, and genuinely optional.
+
+**With `UNSPLASH_ACCESS_KEY`:** `npm run art` searches Unsplash, picks a source
+photo large enough that a 3000px square isn't an upscale, and duotones it into
+the show's palette. It also calls Unsplash's download-registration endpoint,
+which is what credits the photographer's stats — an API guideline requirement,
+not an optional nicety — and writes the attribution into every episode's show
+notes automatically.
+
+**Without it:** covers are a plain duotone gradient in the same palette. Not a
+placeholder — a cover you could ship. The pipeline says so once and moves on;
+nothing fails.
+
+You register your own Unsplash application to get a key. The free Demo tier is
+50 requests/hour and this uses about six a week.
+
+Generated covers and downloaded source photos are both gitignored, so no
+photograph ever enters the repository.
 
 Episode art deliberately carries no type: a podcast app already prints the
 title next to it, so a slab of display face over the top just covers the thing

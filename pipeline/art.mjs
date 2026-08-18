@@ -23,8 +23,16 @@ function font() {
 }
 
 // --- Unsplash -------------------------------------------------------------
+// Optional, and genuinely optional: no key means no photography, not a broken
+// pipeline. Returning null here is what lets makeCover fall back to a plain
+// duotone and makeWeekArt fall back to the show cover, so a fresh clone with
+// one API key still produces a complete, branded show.
 async function findPhoto(query) {
-  const key = need('UNSPLASH_ACCESS_KEY');
+  const key = process.env.UNSPLASH_ACCESS_KEY;
+  if (!key) {
+    warn('no UNSPLASH_ACCESS_KEY — using a plain duotone instead of photography');
+    return null;
+  }
   const url = new URL('https://api.unsplash.com/search/photos');
   url.searchParams.set('query', query);
   url.searchParams.set('orientation', 'squarish');
@@ -140,6 +148,17 @@ function colorForWeek(week, offset = 0) {
   return ART.overlays[(h + offset) % ART.overlays.length];
 }
 
+// A stand-in for photography. treat() duotones whatever it is handed, so a soft
+// greyscale gradient comes out as a clean two-colour cover in the show's own
+// palette — dark at the bottom where the type sits, lighter above. Not as good
+// as a photograph, which is the point of the Unsplash path, but not a
+// placeholder either: it is a cover you could ship.
+function synthSource(out) {
+  const S = ART.size;
+  magick(['-size', `${S}x${S}`, 'gradient:gray75-gray12', out]);
+  return out;
+}
+
 // --- show cover (constant) ------------------------------------------------
 export async function makeCover(showId) {
   const show = getShow(showId);
@@ -149,10 +168,14 @@ export async function makeCover(showId) {
 
   if (!existsSync(src)) {
     const photo = await findPhoto('school bus morning light empty road');
-    if (!photo) throw new Error('no cover photo found');
-    await download(photo.url, src);
-    writeJSON(join(ASSETS, `cover-credit-${showId}.json`), photo.credit);
-    log(`  photo by ${photo.credit.photographer}`);
+    if (photo) {
+      await download(photo.url, src);
+      writeJSON(join(ASSETS, `cover-credit-${showId}.json`), photo.credit);
+      log(`  photo by ${photo.credit.photographer}`);
+    } else {
+      synthSource(src);
+      log('  plain duotone cover — add UNSPLASH_ACCESS_KEY for photography');
+    }
   }
 
   treat(src, out, paletteFor(showId), { title: BRAND.name, kicker: show.label });
