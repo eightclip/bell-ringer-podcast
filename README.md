@@ -10,11 +10,15 @@ takes the mechanism apart, Thursday argues with it, Friday recaps and quizzes.
 Every factual claim is checked against the page it came from before a word is
 voiced.
 
-**▶ [Listen to a real episode](.github/media/sample-episode.mp3)** — *Prove the
-Earth Spins*, 8:38. Built by this repository from the bundled example
-curriculum, from four sources at OpenStax, NOAA and the Library of Congress.
-It cost $3.18 and took about twenty minutes. There is no music in it, because
-no music ships with this repo — those are the silent breaks.
+**▶ [Listen to a real episode](.github/media/sample-episode.mp3)** — *You, a
+Stick, and Four Missing Minutes*, 9:46. Built by this repository from the
+bundled example curriculum, sourced from OpenStax, NOAA and the Library of
+Congress. Listen at 1:07: the bed comes up under the story and is gone by 2:02,
+a beat before a question the listener is meant to answer out loud. The writer
+placed those cues, not a human.
+
+No music ships with this repo — that sample uses licensed tracks, so you supply
+your own. See [docs/ASSETS.md](docs/ASSETS.md).
 
 ```
 npm install
