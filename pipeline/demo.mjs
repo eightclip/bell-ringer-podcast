@@ -132,6 +132,27 @@ export async function demo() {
   const episodes = readJSON(join(dir, 'episodes.json'));
   const first = episodes?.episodes?.[0];
 
+  // Write the same ledger a full render writes, so the `npm run costs` we point
+  // at below actually has something to report.
+  const researchDoc = readJSON(join(dir, 'research.json'));
+  const scriptsDoc = readJSON(join(dir, 'scripts.json'));
+  const voiceDoc = readJSON(join(dir, 'voice.json'));
+  const VOICE_RATE = 0.025 / 1000; // OpenAI; the demo is always full-stock
+  const voiceUsd = (voiceDoc?.chars_rendered || 0) * VOICE_RATE;
+  const ledger = {
+    show: SHOW, week: WEEK, demo: true,
+    research_usd: researchDoc?.cost_usd || 0,
+    scripts_usd: scriptsDoc?.cost_usd || 0,
+    voice_usd: Number(voiceUsd.toFixed(4)),
+    total_usd: Number(((researchDoc?.cost_usd || 0) + (scriptsDoc?.cost_usd || 0) + voiceUsd).toFixed(4)),
+    voice_mode: voiceDoc?.mode,
+    episodes: episodes?.episodes?.length || 0,
+    claims: researchDoc?.claims?.length || 0,
+    claims_cut: researchDoc?.rejected?.length || 0,
+    tokens: researchDoc?.tokens || null,
+  };
+  lib.writeJSON(join(dir, 'cost.json'), ledger);
+
   step('Done');
   if (first?.file) {
     okLog(`Episode: ${first.file}`);

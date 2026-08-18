@@ -21,6 +21,10 @@ build/
 *.mp3
 *.wav
 *.m4a
+# The one exception: a sample episode built entirely from the invented example
+# curriculum, with no music and no photography, so there is nothing in it that
+# belongs to anyone else.
+!.github/media/sample-episode.mp3
 
 # Your own curriculum. Ships as an example only; keep real school documents,
 # which identify a real child and a real teacher, out of the repo.
