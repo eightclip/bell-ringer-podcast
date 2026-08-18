@@ -7,7 +7,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_VOICE_FOR, OPENAI_TTS_MODEL, VOICE_DIRECTION } from '../config/show.mjs';
+import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_VOICE_FOR, OPENAI_TTS_MODEL, VOICE_DIRECTION, AUDIO } from '../config/show.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, need, step, ok, warn, log, run, ffprobeDuration, fmtDuration, spokenOnly, isMain, ROOT } from './lib.mjs';
 import { scrubNames, privateNames } from './prosody.mjs';
 
@@ -109,7 +109,10 @@ async function say(text, { engine, role, direction, speed, trailingSilence }, ou
 
 // --- silence --------------------------------------------------------------
 function silence(seconds, outPath) {
-  run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', String(seconds), '-c:a', 'libmp3lame', '-b:a', '64k', outPath]);
+  // Same rate and bitrate as everything else it will be concatenated with.
+  run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi',
+    '-i', `anullsrc=r=${AUDIO.sampleRate}:cl=mono`, '-t', String(seconds),
+    '-c:a', 'libmp3lame', '-b:a', '160k', '-ar', String(AUDIO.sampleRate), outPath]);
 }
 
 // --- main -----------------------------------------------------------------
@@ -175,12 +178,33 @@ export async function voiceWeek(showId, week) {
       } else {
         const listFile = join(audioDir, `${seg.id}.txt`);
         writeFileSync(listFile, files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join('\n'));
-        // Re-encode rather than stream-copy. Concatenating MP3s with -c copy
-        // splices frame headers whose timestamps don't line up, which ffmpeg
-        // reports as non-monotonic DTS and which can audibly glitch at the
-        // seam. One re-encode per segment is cheap insurance.
-        run('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', listFile,
-          '-c:a', 'libmp3lame', '-b:a', '64k', '-ar', '44100', '-ac', '1', segOut]);
+
+        // The concat FILTER, not the concat demuxer, and this matters.
+        //
+        // The demuxer requires every input to share stream parameters, and here
+        // they never did: OpenAI returns 24 kHz mp3, generated silence was made
+        // at 44.1 kHz, and Hume returns something else again. Splicing across
+        // that parameter change put an audible click at every [PAUSE] — right
+        // where a deliberate silence was supposed to make a line land, which is
+        // the worst possible place for one. Trailing -ar on the encoder did not
+        // help, because the damage happened at the demuxer before the encoder
+        // ever saw it.
+        //
+        // The filter decodes each input separately, so aresample can bring them
+        // to a common rate before they are joined. Encoding at 160k rather than
+        // 64k because this is an intermediate: it is decoded again in assembly
+        // and re-encoded to AUDIO.bitrate, and there is no reason to spend a
+        // generation of lossy artefacts on a file nobody ever hears.
+        const inputs = files.flatMap((f) => ['-i', f]);
+        const chain = files
+          .map((_, i) => `[${i}:a]aresample=${AUDIO.sampleRate},aformat=channel_layouts=mono[a${i}]`)
+          .join(';');
+        const joined = files.map((_, i) => `[a${i}]`).join('');
+        run('ffmpeg', ['-y', '-v', 'error', ...inputs,
+          '-filter_complex', `${chain};${joined}concat=n=${files.length}:v=0:a=1[out]`,
+          '-map', '[out]',
+          '-c:a', 'libmp3lame', '-b:a', '160k',
+          '-ar', String(AUDIO.sampleRate), '-ac', String(AUDIO.channels), segOut]);
       }
       const dur = ffprobeDuration(segOut);
       segs.push({ id: seg.id, role: seg.role, engine, file: segOut, seconds: dur });

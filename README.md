@@ -164,6 +164,14 @@ there is no support.
 
 If you build something with it, I would genuinely like to hear about it.
 
+## Credits
+
+The road in the header and social card is
+[a photograph by Deepank Aggarwal](https://unsplash.com/photos/gray-asphalt-road-during-daytime-T18RQWiCFec?utm_source=bell_ringer&utm_medium=referral)
+on [Unsplash](https://unsplash.com/@a_deepank?utm_source=bell_ringer&utm_medium=referral),
+duotoned by this pipeline's own `treat()` — the same treatment every episode
+cover gets.
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE). The code is yours to do anything with; the name
