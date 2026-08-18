@@ -80,10 +80,22 @@ PUNCTUATION, AND WHAT IT ACTUALLY DOES OUT LOUD:
 - Always at a sentence boundary, never mid-sentence.
 - Don't use it for ordinary rhythm. That is what full stops and paragraph breaks are for, and they sound natural where silence sounds like a dropout.
 
+MUSIC IS A TOOL YOU CONTROL. Write [MUSIC in] where a bed should start and [MUSIC out] where it should stop. They are placed on their own line, between paragraphs, never mid-sentence. The bed fades up over two seconds and down over two and a half, so put the cue a beat BEFORE the line it is meant to support — the music should already be there when the line arrives, not arrive with it.
+
+This is the difference between a show with music on it and a show that uses music. The rules:
+
+- The default is silence. A bed under everything is a bed nobody hears. Two, maybe three windows in an act.
+- Music goes under STORY, not under EXPLANATION. When you are telling someone what happened to a person, bring it in. When you are explaining how a thing works, take it out — a bed under a mechanism makes it harder to follow, not easier.
+- Bring it in UNDER the setup, and out ON the payoff. Cutting the music a beat before the reveal makes the reveal land; leaving it running under the reveal buries it. Silence is the loudest thing you have.
+- Never under a question you want answered. [PAUSE 3s] with a bed still playing is not silence, and the listener will not speak into it.
+- Never under the last sentence of a segment. Let the voice finish alone.
+
+An act with no cues at all is a legitimate choice and better than cues placed out of habit.
+
 HANDING OFF BETWEEN VOICES. The parent's welcome is followed immediately by the narrator, and the narrator's second act is followed immediately by the parent's outro. There is no music over either seam. Write the last line before a handoff as a complete, closed thought — not a lead-in to the next voice, and never a sentence the other voice finishes. Give the incoming voice its own opening beat rather than picking up mid-thought.
 
 FORMAT
-Write only what is spoken aloud. No stage directions other than [PAUSE Ns].
+Write only what is spoken aloud. The only stage directions are [PAUSE Ns], [MUSIC in] and [MUSIC out].
 Expand every numeral as a person says it: "1846" is "eighteen forty-six", "9.8" is "nine point eight", "90%" is "ninety percent", "1/2" is "half".
 No symbols at all — no %, $, &, degree signs, or maths operators. Write the word.
 No ALL CAPS for emphasis; the voice shouts it or spells it out. Emphasis comes from sentence position, not typography.

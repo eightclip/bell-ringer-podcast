@@ -7,7 +7,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_VOICE_FOR, OPENAI_TTS_MODEL, VOICE_DIRECTION, AUDIO } from '../config/show.mjs';
+import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_TTS_MODEL, VOICE_DIRECTION, AUDIO } from '../config/show.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, need, step, ok, warn, log, run, ffprobeDuration, fmtDuration, spokenOnly, isMain, ROOT } from './lib.mjs';
 import { scrubNames, privateNames } from './prosody.mjs';
 
@@ -15,15 +15,24 @@ const CACHE = join(ROOT, 'build', '.voice-cache');
 const MAX_CHARS = 1800; // well inside Hume's per-utterance ceiling; keeps retries cheap
 
 // --- chunking -------------------------------------------------------------
-// Split on explicit pauses first, then on sentence boundaries. Never split
-// mid-sentence — a seam inside a sentence is audible, a seam between them is not.
+// Split on explicit pauses and music cues first, then on sentence boundaries.
+// Never split mid-sentence — a seam inside a sentence is audible, a seam
+// between them is not.
+//
+// Music cues are why this splits on markers rather than just stripping them.
+// A cue's whole point is WHERE it lands: "the bed comes in on this line". Making
+// it a chunk boundary is what turns a position in the text into a position in
+// the finished audio, because every chunk before it has a measured duration.
+// That is the same trick [PAUSE] already used; the cue just carries no audio.
 export function chunk(text) {
   const parts = [];
-  for (const piece of text.split(/(\[PAUSE\s+([\d.]+)s\])/i)) {
+  for (const piece of text.split(/(\[PAUSE\s+[\d.]+s\]|\[MUSIC[^\]]*\])/i)) {
     if (!piece) continue;
     const pause = piece.match(/^\[PAUSE\s+([\d.]+)s\]$/i);
     if (pause) { parts.push({ kind: 'silence', seconds: Number(pause[1]) }); continue; }
-    if (/^[\d.]+$/.test(piece)) continue; // the capture group from the split
+    const cue = piece.match(/^\[MUSIC\s+(in|out|swell)\b[^\]]*\]$/i);
+    if (cue) { parts.push({ kind: 'cue', action: cue[1].toLowerCase() }); continue; }
+    if (/^\[MUSIC/i.test(piece)) continue;   // malformed cue: drop it, don't speak it
     // Last line of defence. script.mjs already scrubbed this, but a scripts.json
     // written before that gate existed would otherwise be voiced as-is — which
     // is exactly how a name reached two published episodes. Cheap, and it makes
@@ -81,7 +90,7 @@ async function openaiSay(text, role, outPath, attempt = 1, direction = null) {
     headers: { Authorization: `Bearer ${need('OPENAI_API_KEY')}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: OPENAI_TTS_MODEL,
-      voice: OPENAI_VOICE_FOR(role),
+      voice: OPENAI_VOICE,
       input: text,
       instructions: [VOICE_DIRECTION[role], direction].filter(Boolean).join(' '),
       response_format: 'mp3',
@@ -103,7 +112,7 @@ async function openaiSay(text, role, outPath, attempt = 1, direction = null) {
 async function say(text, { engine, role, direction, speed, trailingSilence }, outPath) {
   if (engine === 'openai') return openaiSay(text, role, outPath, 1, direction);
   const voice = HUME_VOICES[engine]?.();
-  if (!voice?.id) throw new Error(`No Hume voice for engine "${engine}" — set HUME_VOICE_PARENT / HUME_VOICE_NARRATOR in .env`);
+  if (!voice?.id) throw new Error(`No Hume voice for engine "${engine}" — set HUME_VOICE_DAD / HUME_VOICE_HOST in .env`);
   return humeSay(text, voice, outPath, { direction, speed, trailingSilence });
 }
 
@@ -124,7 +133,7 @@ export async function voiceWeek(showId, week) {
 
   mkdirSync(CACHE, { recursive: true });
   const modeRoles = VOICE_MODES[VOICE_MODE];
-  log(`voice mode: ${VOICE_MODE} (parent=${modeRoles.parent}, narrator=${modeRoles.narrator})`);
+  log(`voice mode: ${VOICE_MODE} (dad=${modeRoles.dad}, host=${modeRoles.host})`);
 
   let chars = 0, cached = 0, rendered = 0;
   const byEngine = {};
@@ -147,12 +156,23 @@ export async function voiceWeek(showId, week) {
       const spec = segmentSpec(seg.id) || {};
       const pieces = chunk(seg.text);
       const files = [];
+      // Where each cue lands in the finished segment. A cue has no audio, so
+      // its timestamp is simply how much audio precedes it — which is only
+      // knowable here, after each preceding chunk has been rendered and
+      // measured. Assembly turns these into a volume envelope.
+      const cues = [];
+      let elapsed = 0;
 
       for (const [i, p] of pieces.entries()) {
+        if (p.kind === 'cue') {
+          cues.push({ action: p.action, at: Number(elapsed.toFixed(3)) });
+          continue;
+        }
         const out = join(audioDir, `${seg.id}-${String(i).padStart(2, '0')}.mp3`);
         if (p.kind === 'silence') {
           silence(p.seconds, out);
           files.push(out);
+          elapsed += p.seconds;
           continue;
         }
         // Cache key covers the text AND the voice, so switching modes re-renders.
@@ -169,6 +189,7 @@ export async function voiceWeek(showId, week) {
           rendered++;
         }
         files.push(out);
+        elapsed += ffprobeDuration(out);
       }
 
       // Stitch this segment's chunks into one file.
@@ -207,8 +228,9 @@ export async function voiceWeek(showId, week) {
           '-ar', String(AUDIO.sampleRate), '-ac', String(AUDIO.channels), segOut]);
       }
       const dur = ffprobeDuration(segOut);
-      segs.push({ id: seg.id, role: seg.role, engine, file: segOut, seconds: dur });
-      log(`  ${seg.id.padEnd(12)} ${fmtDuration(dur).padStart(6)}  ${engine}`);
+      segs.push({ id: seg.id, role: seg.role, engine, file: segOut, seconds: dur, cues });
+      const cueNote = cues.length ? `  music: ${cues.map((c) => `${c.action}@${fmtDuration(c.at)}`).join(' ')}` : '';
+      log(`  ${seg.id.padEnd(12)} ${fmtDuration(dur).padStart(6)}  ${engine}${cueNote}`);
     }
 
     const total = segs.reduce((n, s) => n + s.seconds, 0);

@@ -96,7 +96,42 @@ function renderMusicBed(track, seconds, out, { fadeIn = 1.2, fadeOut = 1.8, targ
 // compressor's own makeup gain is accounted for, and — the point of the whole
 // exercise — a voice clone and a library voice come out of it at the same
 // loudness instead of 4.5 dB apart.
-function renderSpeech(speechFile, out, { bed = null } = {}) {
+// Turn music cues into a gain envelope for the bed.
+//
+// One trapezoid per in/out pair — up over FADE_IN, hold, down over FADE_OUT —
+// and the overall gain is the maximum across them, so overlapping or adjacent
+// cues merge instead of fighting. An `in` with no matching `out` runs to the
+// end of the segment, which is what a writer means by "and let it play out".
+//
+// This has to be one expression rather than a chain of afade filters: afade
+// t=in silences everything before its start, so a second fade-in would erase
+// the first window rather than following it.
+const FADE_IN = 2.0;
+const FADE_OUT = 2.5;
+
+function cueEnvelope(cues, dur) {
+  const windows = [];
+  let open = null;
+  for (const c of cues) {
+    if (c.action === 'in' || c.action === 'swell') {
+      if (open === null) open = c.at;
+    } else if (c.action === 'out' && open !== null) {
+      windows.push([open, c.at]);
+      open = null;
+    }
+  }
+  if (open !== null) windows.push([open, dur]);
+  if (!windows.length) return null;
+
+  // No backslash-escaping of the commas: the expression is wrapped in single
+  // quotes in the filtergraph below, which is what protects them. Escaping as
+  // well passes literal backslashes to the evaluator and it rejects the lot.
+  const trapezoid = ([t0, t1]) =>
+    `max(0,min(1,min((t-${t0.toFixed(2)})/${FADE_IN},(${(t1 + FADE_OUT).toFixed(2)}-t)/${FADE_OUT})))`;
+  return windows.map(trapezoid).reduce((acc, w) => (acc ? `max(${acc},${w})` : w), '');
+}
+
+function renderSpeech(speechFile, out, { bed = null, cues = [] } = {}) {
   const dur = ffprobeDuration(speechFile);
   const dry = out.replace(/\.wav$/, '.dry.wav');
 
@@ -118,12 +153,21 @@ function renderSpeech(speechFile, out, { bed = null } = {}) {
   // speech rather than -18 dB under whatever that track shipped at.
   const bedRaw = cutExcerpt(bed, dur, out.replace(/\.wav$/, '.bed.wav'));
   const bedGain = gainTo(bedRaw, AUDIO.speechAnchor + AUDIO.musicBedGain) ?? AUDIO.musicBedGain;
+
+  // With cues, the bed follows the script. Without them it runs under the whole
+  // segment, which is right for a welcome or an outro and wrong for a five
+  // minute act — music that never stops stops being heard.
+  const env = cueEnvelope(cues, dur);
+  const bedShape = env
+    ? `volume=${bedGain}dB,volume='${env}':eval=frame`
+    : `volume=${bedGain}dB,afade=t=in:st=0:d=1.5,afade=t=out:st=${Math.max(0, dur - 2)}:d=2`;
+
   run('ffmpeg', [
     '-y', '-v', 'error',
     '-i', dry,
     '-i', bedRaw,
     '-filter_complex',
-    `[1:a]volume=${bedGain}dB,afade=t=in:st=0:d=1.5,afade=t=out:st=${Math.max(0, dur - 2)}:d=2[bed];` +
+    `[1:a]${bedShape}[bed];` +
     `[0:a]volume=${gain}dB[v];` +
     `[v][bed]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[out]`,
     '-map', '[out]',
@@ -224,7 +268,11 @@ export async function assembleWeek(showId, week) {
       } else {
         const seg = ep.segments.find((s) => s.id === spec.id);
         if (!seg) { warn(`no audio for ${spec.id} — skipping`); continue; }
-        seconds = renderSpeech(seg.file, wav, { bed: spec.music === 'under_soft' ? bed : null });
+        // A cue in the script is itself a request for music, so it supplies a
+        // bed to segments that carry none by default — which is every act.
+        const segCues = seg.cues || [];
+        const wantsBed = spec.music === 'under_soft' || segCues.length > 0;
+        seconds = renderSpeech(seg.file, wav, { bed: wantsBed ? bed : null, cues: segCues });
       }
 
       chapters.push({ id: spec.id, label: spec.label, start: cursor, seconds });
