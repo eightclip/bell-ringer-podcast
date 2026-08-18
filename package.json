@@ -1,7 +1,7 @@
 {
   "name": "bell-ringer",
   "version": "0.1.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "description": "A daily ride-to-school podcast built from a kid's actual lesson plans \u2014 researched from institutional sources, fact-checked against the page each claim came from, voiced, mixed, and published to a private feed.",
   "scripts": {

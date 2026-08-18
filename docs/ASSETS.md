@@ -13,21 +13,66 @@
 Everything here is OFL on purpose, so a fresh clone renders correctly without
 anyone having to buy anything.
 
-## Adding your own display face
+## Swapping the typefaces
 
-The artwork looks better with a hand-drawn, slightly irregular display face
-than with Anton — it sits with archival source photography instead of fighting
-it. If you own one:
+There are two independent surfaces. Changing one does not change the other.
 
-1. Drop the `.ttf`/`.otf` in `assets/fonts/` and name it in `ART.titleFont`
-   (`config/show.mjs`). Type is fitted to a box rather than set at a fixed
-   point size, so any face and any title behave.
-2. For the website, add the `.woff2` to `site/public/fonts/`, add an
-   `@font-face` in `site/app/globals.css`, and point `--font-display` at it.
+### A. Cover artwork — rendered by ImageMagick
 
-**Then add it to `.gitignore`.** Most commercial font EULAs prohibit
-redistribution, and a public repo is redistribution. Webfont licences in
-particular are often domain-scoped and do not survive someone forking you.
+Needs a real `.ttf` or `.otf` file.
+
+1. Drop the file in `assets/fonts/`.
+2. Point `ART.titleFont` at it in `config/show.mjs`, with anything you'd accept
+   as a substitute in `ART.fallbackFonts`:
+
+   ```js
+   titleFont: 'YourFace-Bold.ttf',
+   fallbackFonts: ['Anton-Regular.ttf', 'ArchivoBlack-Regular.ttf'],
+   ```
+
+3. `npm run cover && npm run art <show> <week>` to see it.
+
+`pipeline/art.mjs` walks that list and uses the first file that exists, so a
+wrong filename degrades to the fallback instead of crashing. Type is fitted to a
+box rather than set at a fixed point size, so a much wider or narrower face
+still fits — that is what makes this swap safe.
+
+### B. The website — three CSS variables
+
+Needs `.woff2`.
+
+1. Drop the files in `site/public/fonts/`.
+2. In `site/app/globals.css`, replace the `@font-face` blocks at the top.
+3. Point the three variables in `:root` at the new family names:
+
+   ```css
+   --font-display: 'Your Display';  /* wordmark + headings */
+   --font-label:   'Your Label';    /* small letterspaced eyebrows */
+   --font-body:    'Your Body';     /* everything else */
+   ```
+
+Every rule in the stylesheet reads those variables — no family name is hardcoded
+anywhere else — so those three lines are the whole change. Set all three to the
+same family if you only want one.
+
+Good sources: [Google Fonts](https://fonts.google.com) (all OFL),
+[Fontsource](https://fontsource.org) (npm-installable, OFL), and
+[Velvetyne](https://velvetyne.fr) or [Collletttivo](https://www.collletttivo.it)
+for open display faces with more character than the Google defaults.
+
+### Licensing, whichever you pick
+
+**Only commit a font you are allowed to redistribute.** A public repo *is*
+redistribution, and most commercial EULAs prohibit it — webfont licences are
+frequently domain-scoped and do not survive someone forking you. If the face is
+licensed, add it to `.gitignore` and name it in the README as something the user
+supplies.
+
+If it is open, ship its licence file alongside it (`OFL.txt` for SIL fonts).
+OFL 1.1 §2 accepts the notice in the font's own metadata *or* as a text file;
+the metadata is there but is Brotli-compressed inside a `.woff2` and needs a
+library to read, so the text file is the unambiguous version. Every Google Fonts
+download includes one.
 
 ## Music
 

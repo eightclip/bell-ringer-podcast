@@ -16,8 +16,21 @@
  *   - Hairlines and typographic scale do the separating. Boxes don't.
  */
 
-/* The wordmark face. Rokkitt Black is the OFL default so this repo ships
-   complete; swap in your own display face here and in --font-display. */
+/* --- Swapping the typefaces ------------------------------------------------
+   Everything below is the only place font FILES are named. Every rule in this
+   stylesheet points at --font-display / --font-label / --font-body, so to
+   change the look you:
+
+     1. drop .woff2 files into site/public/fonts/
+     2. replace the @font-face blocks here
+     3. point the three variables in :root at the new family names
+
+   Nothing else in the stylesheet needs touching. Whatever you pick, ship its
+   licence file next to it — see docs/ASSETS.md.
+
+   Rokkitt (SIL OFL 1.1) is the shipped default so a fresh clone renders
+   complete with nothing left to buy or download.
+   --------------------------------------------------------------------------- */
 @font-face {
   font-family: 'Rokkitt';
   src: url('/fonts/Rokkitt-Regular.woff2') format('woff2');
@@ -39,8 +52,9 @@
   /* Typefaces. Both default to the bundled OFL Rokkitt so a fresh clone
      renders correctly with no licensed files. Point them at your own faces
      after adding the woff2 to site/public/fonts/ and an @font-face above. */
-  --font-display: 'Rokkitt';
-  --font-label: 'Rokkitt';
+  --font-display: 'Rokkitt';   /* wordmark + headings */
+  --font-label: 'Rokkitt';     /* small letterspaced eyebrow labels */
+  --font-body: 'Rokkitt';      /* everything else */
 
   /* The black the duotone shadows resolve to, so covers meet the page. */
   --ground: #14100D;
@@ -58,7 +72,7 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--paper);
-  font-family: 'Rokkitt', Georgia, serif;
+  font-family: var(--font-body), Georgia, serif;
   font-size: 18px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -72,7 +86,7 @@ a:hover { color: var(--accent); }
 
 /* Small letterspaced labels. The only job the label face has. */
 .eyebrow {
-  font-family: var(--font-label), 'Rokkitt', serif;
+  font-family: var(--font-label), var(--font-body), serif;
   font-size: .69rem;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -91,7 +105,7 @@ a:hover { color: var(--accent); }
    not vw: the container stops growing at 64rem and the viewport doesn't, so a
    pure vw size runs off the right edge on any wide screen. */
 .wordmark {
-  font-family: var(--font-display), 'Rokkitt', sans-serif;
+  font-family: var(--font-display), var(--font-body), sans-serif;
   font-size: clamp(2.75rem, 13.8vw, 9.3rem);
   line-height: .85;
   letter-spacing: -.015em;
@@ -133,7 +147,7 @@ a:hover { color: var(--accent); }
 .show img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 
 .show h2 {
-  font-family: 'Rokkitt', serif; font-weight: 900;
+  font-family: var(--font-body), serif; font-weight: 900;
   font-size: 1.5rem; letter-spacing: .01em; text-transform: uppercase;
   margin: 1.5rem 0 .3rem; line-height: 1;
 }
@@ -159,7 +173,7 @@ a:hover { color: var(--accent); }
 
 .subscribe {
   display: inline-block; margin-top: 1.35rem;
-  font-family: var(--font-label), 'Rokkitt', serif;
+  font-family: var(--font-label), var(--font-body), serif;
   font-size: .72rem; letter-spacing: .16em; text-transform: uppercase;
   color: var(--accent); text-decoration: none;
   padding-bottom: .3rem; border-bottom: 1px solid currentColor;
@@ -170,7 +184,7 @@ a:hover { color: var(--accent); }
 section.band { margin-top: 5rem; padding-top: 3.5rem; border-top: 1px solid var(--hair); }
 
 .band > h3 {
-  font-family: 'Rokkitt', serif; font-weight: 900;
+  font-family: var(--font-body), serif; font-weight: 900;
   font-size: clamp(1.25rem, 3vw, 1.6rem);
   letter-spacing: .02em; text-transform: uppercase;
   margin: 0 0 2.25rem; line-height: 1;
@@ -209,7 +223,7 @@ footer {
 
 /* --- admin -------------------------------------------------------------- */
 .admin h1 {
-  font-family: var(--font-display), 'Rokkitt', sans-serif;
+  font-family: var(--font-display), var(--font-body), sans-serif;
   text-transform: uppercase; letter-spacing: -.01em;
   font-size: clamp(2.4rem, 8vw, 4rem); margin: 0; line-height: .9;
 }
@@ -218,7 +232,7 @@ footer {
 label { display: block; margin-bottom: 1.5rem; }
 label > span {
   display: block; margin-bottom: .5rem;
-  font-family: var(--font-label), 'Rokkitt', serif;
+  font-family: var(--font-label), var(--font-body), serif;
   font-size: .69rem; letter-spacing: .16em; text-transform: uppercase;
   color: var(--mute);
 }
@@ -238,7 +252,7 @@ input:focus, textarea:focus { outline: 0; border-color: var(--accent); }
 button {
   background: var(--paper); color: var(--ground); border: 0;
   padding: .75rem 1.6rem; cursor: pointer;
-  font-family: var(--font-label), 'Rokkitt', serif;
+  font-family: var(--font-label), var(--font-body), serif;
   font-size: .78rem; letter-spacing: .16em; text-transform: uppercase;
 }
 button:hover { background: var(--accent); }
