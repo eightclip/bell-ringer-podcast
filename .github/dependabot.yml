@@ -1,0 +1,25 @@
+# Routine version updates. Security patches arrive separately via Dependabot
+# security updates, which is an account setting rather than a file.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      all:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: "/site"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      all:
+        patterns: ["*"]
+
+  # Actions are pinned to commit SHAs, which is what makes this entry load
+  # bearing: without it the pins silently rot instead of being updated.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly }

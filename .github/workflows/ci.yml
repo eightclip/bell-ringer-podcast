@@ -1,0 +1,107 @@
+# Proves the repository installs and parses from a clean checkout. Deliberately
+# does NOT call any paid API — CI that costs money per pull request is CI that
+# gets turned off.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci
+
+      - name: Every module parses
+        run: for f in pipeline/*.mjs config/*.mjs; do node --check "$f"; done
+
+      - name: Every module imports
+        run: |
+          node -e "
+          const fs = require('node:fs');
+          const mods = fs.readdirSync('pipeline').filter(f => f.endsWith('.mjs'));
+          Promise.all(mods.map(m => import('./pipeline/' + m).then(() => null).catch(e => m + ': ' + e.message)))
+            .then(r => { const bad = r.filter(Boolean);
+              if (bad.length) { console.error(bad.join('\n')); process.exit(1); }
+              console.log(mods.length + ' modules import cleanly'); });
+          "
+
+      - name: The writer's brief renders for he, she and they
+        run: |
+          node -e "
+          Promise.all([import('./config/show.mjs'), import('./pipeline/script.mjs')]).then(([m, sc]) => {
+            for (const pr of ['he','she','they']) {
+              const show = structuredClone(m.SHOWS.grade6);
+              show.listener.pronouns = pr;
+              const t = sc.writerSystem(show);
+              if (t.includes('undefined') || t.includes('[object')) { console.error(pr + ': template artefact'); process.exit(1); }
+            }
+            console.log('brief renders for all pronoun settings');
+          });
+          "
+
+      # The two properties this repository actually promises: no credential is
+      # committed, and no credential has a working default. Both are cheap to
+      # assert and expensive to notice by hand.
+      - name: No secret is committed
+        run: |
+          if git ls-files | grep -E '^\.env($|\.)' | grep -v '\.env\.example'; then
+            echo "::error::an env file is tracked"; exit 1
+          fi
+          if git grep -nIE 'sk-ant-[A-Za-z0-9]{10}|sk-proj-[A-Za-z0-9]{10}|AKIA[0-9A-Z]{16}' -- . ':!.github/workflows/ci.yml'; then
+            echo "::error::a secret-shaped string is committed"; exit 1
+          fi
+          echo "no secrets committed"
+
+      - name: Credentials fail closed
+        run: |
+          node -e "
+          import('./pipeline/lib.mjs').then(({ need }) => {
+            // need() is the single gate every credential passes through.
+            try { need('DEFINITELY_NOT_SET_' + Date.now()); }
+            catch (e) {
+              if (!/Missing/.test(e.message)) { console.error('need() threw the wrong error: ' + e.message); process.exit(1); }
+              console.log('need() fails closed');
+              return;
+            }
+            console.error('need() returned for an unset variable'); process.exit(1);
+          });
+          "
+          # And end to end: the publish path must refuse to run without storage
+          # credentials rather than half-succeeding.
+          if node pipeline/feed.mjs grade6 >/dev/null 2>&1; then
+            echo "::error::feed.mjs succeeded with no credentials"; exit 1
+          fi
+          echo "feed.mjs refuses without credentials"
+
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site

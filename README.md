@@ -1,3 +1,5 @@
+<img src=".github/media/hero.png" alt="Bell Ringer — lesson plan, research, verify, script, voice, mix, publish" width="100%">
+
 # Bell Ringer
 
 **A daily podcast for the drive to school, built from what your kid is actually
@@ -146,7 +148,21 @@ including where it is weaker than it looks. The two things that matter most:
 This repository contains no personal data, no real curriculum, and no
 credentials. The example plan is invented.
 
+## A note on what this is
+
+This is a personal project I run for my own family, opened up because the
+interesting parts — the source allowlist, claim-level verification, writing for
+a synthetic voice rather than for the page — seemed worth sharing. Issues and
+pull requests are welcome and may sit for a while. It is not a product and
+there is no support.
+
+If you build something with it, I would genuinely like to hear about it.
+
 ## Licence
 
-MIT — see [LICENSE](LICENSE). Bundled fonts are SIL Open Font License. No music
-is included; see [docs/ASSETS.md](docs/ASSETS.md) before adding any.
+MIT — see [LICENSE](LICENSE). The code is yours to do anything with; the name
+"Bell Ringer" isn't included, so please ship your version under your own.
+
+Bundled fonts are SIL Open Font License 1.1, with the licence text alongside
+them. No music and no photography are bundled — see
+[docs/ASSETS.md](docs/ASSETS.md) before adding either.

@@ -20,11 +20,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+--- Trademark ---
+
+The MIT licence above covers the code. It does not grant rights to the name
+"Bell Ringer" or to any associated branding. Fork it, change it, run it, sell
+it — please do — but ship it under your own name rather than this one. That is
+a request about identity, not a restriction on use.
+
 --- Bundled fonts ---
 
-assets/fonts/Anton-Regular.ttf          SIL Open Font License 1.1
-assets/fonts/ArchivoBlack-Regular.ttf   SIL Open Font License 1.1
-site/public/fonts/Rokkitt-*.woff2       SIL Open Font License 1.1
+assets/fonts/Anton-Regular.ttf          SIL Open Font License 1.1 — assets/fonts/OFL.txt
+assets/fonts/ArchivoBlack-Regular.ttf   SIL Open Font License 1.1 — assets/fonts/OFL.txt
+site/public/fonts/Rokkitt-*.woff2       SIL Open Font License 1.1 — site/public/fonts/OFL.txt
 
-No music is bundled. No licensed display faces are bundled. See docs/ASSETS.md
-before adding either.
+No music is bundled. No photography is bundled. No licensed display faces are
+bundled. See docs/ASSETS.md before adding any of the three.
