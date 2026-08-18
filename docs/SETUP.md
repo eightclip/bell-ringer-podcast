@@ -48,14 +48,24 @@ real plans are gitignored.
 
 `VOICE_MODE` in `.env`:
 
-| Mode | Who speaks | Needs |
-|---|---|---|
-| `full-stock` | OpenAI throughout | `OPENAI_API_KEY` |
-| `hybrid` | Your clone opens and closes, OpenAI narrates | both keys |
-| `full-hume` | Hume throughout | `HUME_API_KEY` |
+The show has two roles, named for the job rather than for who fills it:
+**PARENT** (cold open, welcome, outro) and **NARRATOR** (both acts).
 
-`hybrid` is what the reference show runs: it sounds like a parent introducing
-something, which a fully synthetic read does not.
+| Mode | Parent | Narrator | Cost/week | Needs |
+|---|---|---|---|---|
+| `full-stock` | OpenAI | OpenAI | ~$0.95 | `OPENAI_API_KEY` |
+| `hybrid` | your clone | OpenAI | ~$1.35 | both keys |
+| `duo-hume` | your clone | Hume library | ~$4 | `HUME_API_KEY` |
+| `full-hume` | Hume | Hume | ~$4.50 | `HUME_API_KEY` |
+
+Measured, not guessed: Hume bills ~$0.12/1k characters, OpenAI ~$0.025/1k, and
+a five-episode week is about 38k characters.
+
+`hybrid` is what the show this came from runs. Cloning your own voice for the
+parent role costs about forty cents a week more than `full-stock`, and it is the
+single thing that makes it sound like a family's show rather than a product. On
+`full-stock`, set `OPENAI_VOICE_NARRATOR` to something different from
+`OPENAI_VOICE` so it isn't one voice for eleven minutes.
 
 Pacing is measured per voice, not assumed — see `WORDS_PER_MINUTE` in
 `config/show.mjs`. If you swap a voice, re-measure. On the reference setup the
@@ -67,7 +77,8 @@ instead of drifting.
 
 Hume providers are per voice: a clone is `CUSTOM_VOICE`, a library voice is
 `HUME_AI`. Sending the wrong one returns a 404 that reads like the voice was
-deleted.
+deleted. The variables are `HUME_VOICE_PARENT` / `HUME_VOICE_NARRATOR` and their
+`_PROVIDER` counterparts.
 
 ## 4. Music
 
@@ -112,6 +123,11 @@ Two workflows, both needing repository secrets:
 
 Push `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HUME_*`, `UNSPLASH_ACCESS_KEY`,
 `R2_*`, and `FEED_TOKEN` as Actions secrets.
+
+**Both workflows are skipped until you opt in.** Add a repository *variable*
+(Settings → Secrets and variables → Actions → Variables) named
+`BELL_RINGER_ENABLED` set to `true`. Until then a fork never calls a paid API
+and never emails its owner about a failing cron.
 
 Note the schedule is UTC and does not observe daylight saving. 09:20 UTC is
 2:20am Pacific in summer and 1:20am in winter. Air times are stamped at 09:00

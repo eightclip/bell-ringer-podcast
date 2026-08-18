@@ -21,7 +21,7 @@ export function loadPlan(show) {
   if (!show.planFile) return null;
   const p = join(ROOT, show.planFile);
   if (!existsSync(p)) {
-    warn(`${show.kid.name} has a year plan configured (${show.planFile}) but the file is missing`);
+    warn(`${show.id} has a year plan configured (${show.planFile}) but the file is missing`);
     return null;
   }
   return readJSON(p);
@@ -58,16 +58,16 @@ function describe(entry) {
 // --- pasted input ---------------------------------------------------------
 async function pastedUnit(show, week, dir) {
   const local = readJSON(join(dir, 'input.json'));
-  if (local?.[show.kid.id]) return local[show.kid.id];
+  if (local?.[show.id]) return local[show.id];
 
   // The site writes to R2; pull it down so a laptop and a CI runner behave the
   // same way without anyone syncing files by hand.
   try {
     const { getJSON } = await import('./r2.mjs');
     const remote = await getJSON(`input/${week}.json`);
-    if (remote?.[show.kid.id]) {
-      log(`  pulled ${show.kid.name}'s lesson plan from R2`);
-      return remote[show.kid.id];
+    if (remote?.[show.id]) {
+      log(`  pulled the ${show.id} lesson plan from R2`);
+      return remote[show.id];
     }
   } catch {
     // No R2 configured, or nothing pasted yet — not an error on its own.
@@ -84,7 +84,7 @@ export async function unitFor(show, week, dir) {
       if (entry.carried_from) log(`  carrying forward the unit that began ${entry.carried_from}`);
       return describe(entry);
     }
-    warn(`${show.kid.name}'s year plan has nothing for ${week} — falling back to pasted input`);
+    warn(`the ${show.id} year plan has nothing for ${week} — falling back to pasted input`);
   }
   return pastedUnit(show, week, dir);
 }

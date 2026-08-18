@@ -11,6 +11,13 @@ name: Render the week
 # Monday, and a week that already has a manifest in R2 is skipped, so if
 # Saturday succeeded Sunday costs nothing and exits green. If Saturday failed —
 # an API outage, a bad night — Sunday quietly picks it up.
+# This repository is a template. Scheduled runs stay OFF until you deliberately
+# turn them on, so a fork that someone is only reading never calls a paid API
+# and never emails its owner about a failing cron.
+#
+# To enable: Settings -> Secrets and variables -> Actions -> Variables,
+# add BELL_RINGER_ENABLED = true. Add the secrets first.
+
 on:
   schedule:
     - cron: '0 1 * * 0'    # Sat 6pm PDT / Sun 01:00 UTC — the real render
@@ -31,6 +38,7 @@ concurrency:
 
 jobs:
   render:
+    if: vars.BELL_RINGER_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:

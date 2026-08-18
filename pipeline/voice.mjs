@@ -7,8 +7,9 @@
 import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_TTS_MODEL, VOICE_DIRECTION } from '../config/show.mjs';
+import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_VOICE_FOR, OPENAI_TTS_MODEL, VOICE_DIRECTION } from '../config/show.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, need, step, ok, warn, log, run, ffprobeDuration, fmtDuration, spokenOnly, isMain, ROOT } from './lib.mjs';
+import { scrubNames, privateNames } from './prosody.mjs';
 
 const CACHE = join(ROOT, 'build', '.voice-cache');
 const MAX_CHARS = 1800; // well inside Hume's per-utterance ceiling; keeps retries cheap
@@ -23,7 +24,13 @@ export function chunk(text) {
     const pause = piece.match(/^\[PAUSE\s+([\d.]+)s\]$/i);
     if (pause) { parts.push({ kind: 'silence', seconds: Number(pause[1]) }); continue; }
     if (/^[\d.]+$/.test(piece)) continue; // the capture group from the split
-    const clean = spokenOnly(piece);
+    // Last line of defence. script.mjs already scrubbed this, but a scripts.json
+    // written before that gate existed would otherwise be voiced as-is — which
+    // is exactly how a name reached two published episodes. Cheap, and it makes
+    // the guarantee hold for old build directories too.
+    const { text: safe, hits } = scrubNames(piece);
+    if (hits.length) warn(`name reached the voice stage and was removed — re-run: npm run script`);
+    const clean = spokenOnly(safe);
     if (!clean) continue;
 
     let buf = '';
@@ -74,7 +81,7 @@ async function openaiSay(text, role, outPath, attempt = 1, direction = null) {
     headers: { Authorization: `Bearer ${need('OPENAI_API_KEY')}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: OPENAI_TTS_MODEL,
-      voice: OPENAI_VOICE,
+      voice: OPENAI_VOICE_FOR(role),
       input: text,
       instructions: [VOICE_DIRECTION[role], direction].filter(Boolean).join(' '),
       response_format: 'mp3',
@@ -96,7 +103,7 @@ async function openaiSay(text, role, outPath, attempt = 1, direction = null) {
 async function say(text, { engine, role, direction, speed, trailingSilence }, outPath) {
   if (engine === 'openai') return openaiSay(text, role, outPath, 1, direction);
   const voice = HUME_VOICES[engine]?.();
-  if (!voice?.id) throw new Error(`No Hume voice for engine "${engine}" — set HUME_VOICE_DAD / HUME_VOICE_HOST in .env`);
+  if (!voice?.id) throw new Error(`No Hume voice for engine "${engine}" — set HUME_VOICE_PARENT / HUME_VOICE_NARRATOR in .env`);
   return humeSay(text, voice, outPath, { direction, speed, trailingSilence });
 }
 
@@ -114,7 +121,7 @@ export async function voiceWeek(showId, week) {
 
   mkdirSync(CACHE, { recursive: true });
   const modeRoles = VOICE_MODES[VOICE_MODE];
-  log(`voice mode: ${VOICE_MODE} (dad=${modeRoles.dad}, host=${modeRoles.host})`);
+  log(`voice mode: ${VOICE_MODE} (parent=${modeRoles.parent}, narrator=${modeRoles.narrator})`);
 
   let chars = 0, cached = 0, rendered = 0;
   const byEngine = {};

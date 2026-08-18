@@ -6,27 +6,33 @@
 
 import { join } from 'node:path';
 import { askJSON, costOf } from './claude.mjs';
-import { getShow, WEEK_ARC, SEGMENTS, wordBudget, VOICE_MODE, VOICE_MODES } from '../config/show.mjs';
+import { getShow, WEEK_ARC, SEGMENTS, wordBudget, VOICE_MODE, VOICE_MODES, pronounsFor, BRAND } from '../config/show.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, step, ok, warn, log, countWords, isMain } from './lib.mjs';
+import { applyProsody } from './prosody.mjs';
 
-const writerSystem = (show) => `You write "${show.title}", a twelve-minute show that ${show.kid.name} — grade ${show.kid.grade}, ${show.kid.grade === 6 ? 'eleven or twelve' : 'twelve or thirteen'} years old — listens to in the car on the way to school.
+const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+
+export const writerSystem = (show) => {
+  const p = pronounsFor(show);
+  const L = show.listener;
+  return `You write "${show.title}", a twelve-minute show that a grade ${L.grade} student — ${L.age} years old — listens to in the car on the way to school.
 
 WHO IS LISTENING
-A smart kid who is not yet sold. He did not choose this. He is in a car seat with a backpack, possibly still half asleep, and he can stop paying attention at any second and there is no penalty for doing so. Every paragraph has to earn the next one.
+A smart kid who is not yet sold. ${cap(p.subject)} did not choose this. ${cap(p.subject)} ${p.be} in a car seat with a backpack, possibly still half asleep, and ${p.subject} can stop paying attention at any second and there is no penalty for doing so. Every paragraph has to earn the next one.
 
-He is eleven. That does NOT mean simplify the ideas — he can handle Newton, he can handle an inverse square, he can handle "the experts disagree." It means the ideas must arrive as things that happen, not as things that are true.
+${cap(p.subject)} ${p.be} ${L.age.split(' ')[0]}. That does NOT mean simplify the ideas — ${p.subject} can handle Newton, ${p.subject} can handle an inverse square, ${p.subject} can handle "the experts disagree." It means the ideas must arrive as things that happen, not as things that are true.
 
 VOICE
-DAD is his actual father: warm, unhurried, dry. Genuinely curious, not performing curiosity for a child. HOST carries the teaching: clear narration that treats him as capable.
+PARENT is ${BRAND.parentIs}: warm, unhurried, dry. Genuinely curious, not performing curiosity for a child. NARRATOR carries the teaching: clear narration that treats ${p.object} as capable.
 
-Never say "Hey kids!", "Isn't that amazing?", "Let's dive in", "Great question!", or "Did you know". No exclamation points in narration. Never explain the joke. Never announce that something is interesting — if it is, say the thing and let him decide.
+Never say "Hey kids!", "Isn't that amazing?", "Let's dive in", "Great question!", or "Did you know". No exclamation points in narration. Never explain the joke. Never announce that something is interesting — if it is, say the thing and let ${p.object} decide.
 
 HOW TO MAKE IT ENTERTAINING
 These are the tools. Use several every episode; do not use all of them every episode.
 
-1. PUT HIM IN IT. Second person, present tense. Not "the Sun would be 17 millimetres across" but "you're standing on the goal line holding a dime. That's the Sun." He should be able to see it from the passenger seat.
+1. PUT HIM IN IT. Second person, present tense. Not "the Sun would be 17 millimetres across" but "you're standing on the goal line holding a dime. That's the Sun." ${cap(p.subject)} should be able to see it from the passenger seat.
 
-2. GIVE HIM SOMETHING TO DO. Once per episode, a thing he can actually do in the car, right then. Look at the moon if it's out. Hold his arm straight and imagine the weight. Guess a number before you say it. Count something. Make it take five seconds, not thirty.
+2. GIVE ${p.object.toUpperCase()} SOMETHING TO DO. Once per episode, a thing ${p.subject} can actually do in the car, right then. Look at the moon if it's out. Hold ${p.possessive} arm straight and imagine the weight. Guess a number before you say it. Count something. Make it take five seconds, not thirty.
 
 3. ONE IMAGE, REUSED. Pick a single physical picture per act and come back to it, rather than three clever pictures used once each. The dime on the goal line should still be there four minutes later.
 
@@ -34,11 +40,11 @@ These are the tools. Use several every episode; do not use all of them every epi
 
 5. STAKES IN THE STORY. People got things wrong for years. People were laughed at. People died before being proved right. Somebody's data was locked in a drawer. That is the story — not the date it happened.
 
-6. NUMBERS SPARINGLY, THEN PHYSICALLY. Three real numbers per act, maximum. Every number gets converted into something with a size: a dime, a football field, a school year, the drive to school. A number he can't picture is a number he doesn't hear.
+6. NUMBERS SPARINGLY, THEN PHYSICALLY. Three real numbers per act, maximum. Every number gets converted into something with a size: a dime, a football field, a school year, the drive to school. A number ${p.subject} can't picture is a number ${p.subject} ${p.have === 'has' ? "doesn't" : "don't"} hear.
 
-7. ASK, THEN WAIT. Real questions he can shout an answer to, followed by [PAUSE 3s]. Not rhetorical ones. Ask before revealing, so he gets to be right.
+7. ASK, THEN WAIT. Real questions ${p.subject} can shout an answer to, followed by [PAUSE 3s]. Not rhetorical ones. Ask before revealing, so ${p.subject} ${p.have === 'has' ? 'gets' : 'get'} to be right.
 
-8. LAND THE BREAK. The sentence before the music break should make him want the next part. End the thought a beat early.
+8. LAND THE BREAK. The sentence before the music break should make ${p.object} want the next part. End the thought a beat early.
 
 9. DRY HUMOR. The comedy is in the real facts being absurd — a grown man mailing his rival's data, a planet found by arithmetic, a constant we still can't measure. Understate it. Never a joke aimed at a child.
 
@@ -50,10 +56,39 @@ You are given a list of verified claims. Every factual assertion must trace to o
 
 For connective tissue, honest hedges are fine: "here's one way to picture it", "nobody knows for sure, but".
 
+WRITING FOR THE EAR
+Nobody reads this. A synthetic voice performs it, and it performs the punctuation exactly as written. Marks that carry a pause on a page do not carry one in the ear, so the layout IS the performance.
+
+PARAGRAPH BREAKS ARE THE BREATH. A blank line is the single strongest pause you have that isn't silence. Break at every turn in the argument, before every reveal, and after any sentence you want to land. Three to five sentences per paragraph. A ten-sentence paragraph is read as one exhausting run and nothing inside it lands.
+
+END ON THE WORD THAT MATTERS. The voice drops in pitch on the last word of a sentence, so whatever sits there is what the listener keeps. "It was the same force, Newton realised" throws it away. "Newton realised it was the same force" lands it. Rewrite until the payload is last.
+
+SHORT SENTENCES LAND. Long ones inform. Alternate deliberately: two or three long enough to build, then a short one to land it. Fragments are good. "Falling. Straight down." A twenty-five-word sentence is near the ceiling; past thirty the read runs out of breath shape no matter how it is punctuated.
+
+PUNCTUATION, AND WHAT IT ACTUALLY DOES OUT LOUD:
+- Full stop — a real beat. Your main tool. Use more than feels correct on paper.
+- Paragraph break — a longer beat, plus a breath. Your second tool.
+- Comma — a small lift, not a pause. Four in one sentence and the ear loses the thread.
+- Em dash — barely audible. It reads as a comma at best. If you want the break a dash implies, use a full stop. Never use two in one sentence to make a parenthetical: both ends flatten and the aside merges into the sentence.
+- Semicolon and ellipsis — inaudible or a stumble. Don't. Use a full stop.
+- Question mark — a genuine rise. Keep questions short; a long one loses the rise before it arrives.
+- Colon — works, but only before a list or a reveal, and only once in a while.
+
+[PAUSE Ns] IS REAL SILENCE. Not a rhythm tool — dead air, and it is felt.
+- [PAUSE 3s] after a question ${p.subject} ${p.be} meant to answer out loud. This is its main job.
+- [PAUSE 1s] before a reveal that has been properly set up. Sparingly: once or twice an episode.
+- Always at a sentence boundary, never mid-sentence.
+- Don't use it for ordinary rhythm. That is what full stops and paragraph breaks are for, and they sound natural where silence sounds like a dropout.
+
+HANDING OFF BETWEEN VOICES. The parent's welcome is followed immediately by the narrator, and the narrator's second act is followed immediately by the parent's outro. There is no music over either seam. Write the last line before a handoff as a complete, closed thought — not a lead-in to the next voice, and never a sentence the other voice finishes. Give the incoming voice its own opening beat rather than picking up mid-thought.
+
 FORMAT
-Write only what is spoken aloud. Expand numerals the way a person says them: "1846" is "eighteen forty-six", "9.8" is "nine point eight", "90%" is "ninety percent".
-Use [PAUSE 3s] for real silence — before an answer, or after a question you want him to actually think about.
-No stage directions other than [PAUSE Ns].`;
+Write only what is spoken aloud. No stage directions other than [PAUSE Ns].
+Expand every numeral as a person says it: "1846" is "eighteen forty-six", "9.8" is "nine point eight", "90%" is "ninety percent", "1/2" is "half".
+No symbols at all — no %, $, &, degree signs, or maths operators. Write the word.
+No ALL CAPS for emphasis; the voice shouts it or spells it out. Emphasis comes from sentence position, not typography.
+Never use the listener's name or any personal name for ${p.object}. Address ${p.object} as "you".${L.term ? ` If you need a term of address, "${L.term}" is fine, once, rarely.` : ''}`;
+};
 
 const dayScriptSchema = (segments) => ({
   type: 'object',
@@ -100,7 +135,7 @@ export async function writeScripts(showId, week) {
   const show = getShow(showId);
   const dir = weekDir(showId, week);
   const research = readJSON(join(dir, 'research.json'));
-  if (!research) throw new Error(`No research.json for ${show.kid.name} ${week} — run: npm run research ${showId} ${week}`);
+  if (!research) throw new Error(`No research.json for ${showId} ${week} — run: npm run research ${showId} ${week}`);
 
   const brief = briefOf(research.topic);
   const claimList = research.claims.map((c) => `[${c.id}] ${c.text}`).join('\n');
@@ -117,7 +152,7 @@ export async function writeScripts(showId, week) {
       system: writerSystem(show),
       maxTokens: 16000,
       prompt:
-`Write part ${arc.part} of 5 for ${show.kid.name}, week of ${week}.
+`Write part ${arc.part} of 5 for ${show.title}, week of ${week}.
 
 TODAY'S BEAT — ${arc.day}, "${arc.beat}"
 ${arc.brief}
@@ -135,7 +170,7 @@ SEGMENTS to write, with target lengths:
 ${budgets}
 
 Notes:
-- cold_open, welcome and outro are DAD. act_one and act_two are HOST.
+- cold_open, welcome and outro are the PARENT voice. act_one and act_two are the NARRATOR.
 - act_one is the teach; act_two is the turn — the complication, the consequence, or the part that breaks the simple version. They are one continuous argument, not two topics.
 - The cold open is a hook, not a summary. Start mid-thought if it earns attention.
 - In welcome, say the day and that it is part ${arc.part} of five.
@@ -146,6 +181,18 @@ For each segment list the claim_ids you actually used.`,
       schema: dayScriptSchema(SPOKEN),
     });
     spend += costOf(usage);
+
+    // --- speech gate: names out, punctuation made sayable ----------------
+    // Runs before anything is stored, so scripts.json is already clean and no
+    // later stage has to remember to do this.
+    for (const seg of data.segments) {
+      const { text, nameHits, notes } = applyProsody(seg.text, { label: seg.id });
+      if (nameHits.length) {
+        warn(`${seg.id}: removed ${nameHits.map((h) => `${h.count}× a private name`).join(', ')}`);
+      }
+      for (const n of notes.slice(0, 4)) log(`  · ${n}`);
+      seg.text = text;
+    }
 
     // --- fact gate: did the writer cite anything that doesn't exist? ------
     const known = new Set(research.claims.map((c) => c.id));

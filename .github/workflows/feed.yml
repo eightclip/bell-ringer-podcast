@@ -6,6 +6,13 @@ name: Refresh feed
 # The house is Pacific, so 09:20 UTC is 2:20am in summer and 1:20am in winter —
 # early enough that the phone has the rest of the night on wifi to pull a 7MB
 # file down before the drive.
+# This repository is a template. Scheduled runs stay OFF until you deliberately
+# turn them on, so a fork that someone is only reading never calls a paid API
+# and never emails its owner about a failing cron.
+#
+# To enable: Settings -> Secrets and variables -> Actions -> Variables,
+# add BELL_RINGER_ENABLED = true. Add the secrets first.
+
 on:
   schedule:
     - cron: '20 9 * * 1-5'   # 2:20am PDT / 1:20am PST
@@ -22,6 +29,7 @@ concurrency:
 
 jobs:
   feed:
+    if: vars.BELL_RINGER_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

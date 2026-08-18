@@ -16,6 +16,12 @@ export const BRAND = {
   explicit: false,
   siteUrl: process.env.SITE_URL || 'http://localhost:3000',
 
+  // Who the PARENT voice is, in the writer's words. This lands in the brief
+  // verbatim, so write it the way you'd describe yourself to a stranger:
+  // 'their own father', 'their mum', 'a parent who drives them to school',
+  // 'their uncle Ray'. It is never spoken aloud.
+  parentIs: process.env.PARENT_IS || 'the parent driving them to school',
+
   // The single switch that decides whether this show is discoverable.
   //
   // false emits <itunes:block>Yes</itunes:block>, which tells Apple and every
@@ -38,18 +44,43 @@ export const BRAND = {
   listed: process.env.SHOW_LISTED === 'true',
 };
 
-// Shows are keyed by grade, not by name. The id reaches the outside world —
-// it is in the feed URL, every audio path and the artwork filenames — so a
-// name here would put two children's names on a public URL for no benefit.
-// `kid.name` stays for the writer's own understanding and never ships: the
-// scripts address the listener as "you".
+// --- Who is listening -----------------------------------------------------
+// The writer's brief is generated from these, so setting them correctly is the
+// difference between a show that sounds like it is for your kid and one that
+// sounds like it is for a demographic.
+//
+// `pronouns` is 'they' by default. That is not a placeholder to be corrected —
+// it is correct for a child whose pronouns you have not been told, and it is
+// correct for a child who uses it. Set 'he' or 'she' if that is right for the
+// listener. Every sentence in the brief agrees with whichever you choose,
+// including the verbs.
+export const PRONOUNS = {
+  he:   { subject: 'he',   object: 'him',  possessive: 'his',   reflexive: 'himself',    be: 'is',  have: 'has',  s: 's' },
+  she:  { subject: 'she',  object: 'her',  possessive: 'her',   reflexive: 'herself',    be: 'is',  have: 'has',  s: 's' },
+  they: { subject: 'they', object: 'them', possessive: 'their', reflexive: 'themselves', be: 'are', have: 'have', s: '' },
+};
+
+export const pronounsFor = (showOrId) => {
+  const show = typeof showOrId === 'string' ? getShow(showOrId) : showOrId;
+  return PRONOUNS[show.listener?.pronouns] || PRONOUNS.they;
+};
+
+// Shows are keyed by grade, not by name. The id reaches the outside world — it
+// is in the feed URL, every audio path and every artwork filename — so a name
+// here would put a child's name on a public URL for no benefit. Nothing in
+// `listener` is ever spoken: the scripts address the listener as "you".
 export const SHOWS = {
   grade6: {
     id: 'grade6',
     title: 'Bell Ringer — 6th Grade',
     slug: 'grade6',
     label: '6th Grade',
-    kid: { id: 'grade6', name: 'the listener', grade: 6 },
+    listener: {
+      grade: 6,
+      age: 'eleven or twelve',   // how the brief describes them
+      pronouns: 'they',          // 'he' | 'she' | 'they'
+      term: 'kiddo',             // rare direct address; '' for none
+    },
     tagline: 'Sixth grade, on the way to school.',
     description:
       'A daily twelve-minute ride-to-school show built from what a sixth grader is ' +
@@ -65,7 +96,12 @@ export const SHOWS = {
     title: 'Bell Ringer — 7th Grade',
     slug: 'grade7',
     label: '7th Grade',
-    kid: { id: 'grade7', name: 'the listener', grade: 7 },
+    listener: {
+      grade: 7,
+      age: 'twelve or thirteen',
+      pronouns: 'they',
+      term: 'kiddo',
+    },
     tagline: 'Seventh grade, on the way to school.',
     description:
       'A daily twelve-minute ride-to-school show built from what a seventh grader is ' +
@@ -149,21 +185,21 @@ export const WEEK_ARC = [
 // new voice — so the same clone can open cold and land an outro differently.
 // `speed` is Octave's non-linear rate (0.5 slow — 2.0 fast); 1.0 is normal.
 export const SEGMENTS = [
-  { id: 'cold_open',   seconds: 20,  voice: 'dad',  music: null,         label: 'Cold open — the hook',
+  { id: 'cold_open',   seconds: 20,  voice: 'parent',  music: null,         label: 'Cold open — the hook',
     direction: 'Quiet and close, like the first thing said after the radio goes off. Land the first sentence and let it sit. Curious, not dramatic — never announce.',
     speed: 0.94, trailingSilence: 0.6 },
   { id: 'theme',       seconds: 15,  voice: null,   music: 'theme',      label: 'Theme' },
-  { id: 'welcome',     seconds: 30,  voice: 'dad',  music: 'under_soft', label: "Welcome + today's map",
+  { id: 'welcome',     seconds: 30,  voice: 'parent',  music: 'under_soft', label: "Welcome + today's map",
     direction: 'Easy and offhand, the way you talk while pulling out of the driveway. Warm, slightly amused, unhurried.',
     speed: 1.0, trailingSilence: 0.4 },
-  { id: 'act_one',     seconds: 300, voice: 'host', music: null,         label: 'Act One — the teach',
+  { id: 'act_one',     seconds: 300, voice: 'narrator', music: null,         label: 'Act One — the teach',
     direction: 'Clear documentary narration. Even and unhurried, letting the facts carry weight. Never bright or salesy. Leave real space at the end of each sentence.',
     speed: 1.0, trailingSilence: 0.3 },
   { id: 'break_one',   seconds: 15,  voice: null,   music: 'sting',      label: 'Music break' },
-  { id: 'act_two',     seconds: 210, voice: 'host', music: null,         label: 'Act Two — the turn',
+  { id: 'act_two',     seconds: 210, voice: 'narrator', music: null,         label: 'Act Two — the turn',
     direction: 'Same narration, a shade more urgency — this is the complication. Still calm; the tension is in the material, not the delivery. Leave real space at the end of each sentence.',
     speed: 1.0, trailingSilence: 0.3 },
-  { id: 'outro',       seconds: 40,  voice: 'dad',  music: 'under_soft', label: 'Tomorrow on the show + outro',
+  { id: 'outro',       seconds: 40,  voice: 'parent',  music: 'under_soft', label: 'Tomorrow on the show + outro',
     direction: 'Wrapping up as you pull into the drop-off line. Affectionate and a little dry. The tease is thrown away, not sold.',
     speed: 0.98, trailingSilence: 0.8 },
   { id: 'outro_music', seconds: 25,  voice: null,   music: 'theme',      label: 'Outro music' },
@@ -181,28 +217,31 @@ export const TARGET_SECONDS = SEGMENTS.reduce((n, s) => n + s.seconds, 0); // 65
 // 1.00, 0.85, 0.78 and 0.70 measured 182, 200, 181 and 172 wpm, which is mostly
 // noise around 180. Rather than fight it, the host moved to OpenAI, which
 // narrates at 155-164 wpm without being asked and costs a fifth as much.
-// Dad stays on the clone. Re-measure if either voice changes.
-export const WORDS_PER_MINUTE = { dad: 160, host: 157 };
+// The parent voice stays on the clone. Re-measure if either voice changes.
+export const WORDS_PER_MINUTE = { parent: 160, narrator: 157 };
 
-export function wordBudget(seconds, role = 'host') {
+export function wordBudget(seconds, role = 'narrator') {
   const wpm = WORDS_PER_MINUTE[role] ?? 165;
   return Math.round((seconds / 60) * wpm);
 }
 
 // --- Voice ----------------------------------------------------------------
 // Two voices is not a nicety — even eleven minutes of one synthetic voice is
-// wearing. Dad opens and closes; the co-host carries the teach.
+// wearing. The PARENT voice opens and closes; the NARRATOR carries the teach.
 //
-// duo-hume   — Dad + a second Hume voice. Works with voices already owned.
-// hybrid     — Dad on Hume, stock OpenAI co-host. Much cheaper per minute.
-// full-hume  — Dad narrates everything.
-// full-stock — no Hume at all; dry runs that shouldn't burn cloned-voice credits.
+// The roles are named for their job, not for who fills them. The parent voice
+// is whoever is doing the school run — clone your own voice, or use a stock one.
+//
+// full-stock — both roles on OpenAI. One API key, cheapest, and the default.
+// hybrid     — your cloned voice as the parent, stock narrator. ~$1.30/week.
+// duo-hume   — two Hume voices.
+// full-hume  — everything on Hume. Roughly 3.5x full-stock.
 
 export const VOICE_MODES = {
-  'duo-hume':  { dad: 'hume',   host: 'hume-host' },
-  hybrid:      { dad: 'hume',   host: 'openai' },
-  'full-hume': { dad: 'hume',   host: 'hume' },
-  'full-stock':{ dad: 'openai', host: 'openai' },
+  'full-stock': { parent: 'openai', narrator: 'openai' },      // no Hume account needed
+  hybrid:       { parent: 'hume',   narrator: 'openai' },      // your voice hosts, stock narrates
+  'duo-hume':   { parent: 'hume',   narrator: 'hume-narrator' },
+  'full-hume':  { parent: 'hume',   narrator: 'hume' },
 };
 
 // Each voice carries its own provider: a cloned voice is CUSTOM_VOICE, one from
@@ -210,16 +249,18 @@ export const VOICE_MODES = {
 // like the voice was deleted.
 export const HUME_VOICES = {
   hume: () => ({
-    id: process.env.HUME_VOICE_DAD || process.env.HUME_VOICE_ID,
-    provider: process.env.HUME_VOICE_DAD_PROVIDER || 'CUSTOM_VOICE',
+    id: process.env.HUME_VOICE_PARENT || process.env.HUME_VOICE_ID,
+    provider: process.env.HUME_VOICE_PARENT_PROVIDER || 'CUSTOM_VOICE',
   }),
-  'hume-host': () => ({
-    id: process.env.HUME_VOICE_HOST || process.env.HUME_VOICE_DAD,
-    provider: process.env.HUME_VOICE_HOST_PROVIDER || process.env.HUME_VOICE_DAD_PROVIDER || 'CUSTOM_VOICE',
+  'hume-narrator': () => ({
+    id: process.env.HUME_VOICE_NARRATOR || process.env.HUME_VOICE_PARENT,
+    provider: process.env.HUME_VOICE_NARRATOR_PROVIDER || process.env.HUME_VOICE_PARENT_PROVIDER || 'CUSTOM_VOICE',
   }),
 };
 
-export const VOICE_MODE = process.env.VOICE_MODE || 'duo-hume';
+// full-stock is the default: it needs one API key and no cloned voice, so a
+// fresh clone works before anyone has signed up for anything else.
+export const VOICE_MODE = process.env.VOICE_MODE || 'full-stock';
 
 export function voiceEngineFor(role) {
   const mode = VOICE_MODES[VOICE_MODE];
@@ -228,13 +269,18 @@ export function voiceEngineFor(role) {
 }
 
 export const OPENAI_VOICE = process.env.OPENAI_VOICE || 'sage';
+// Optional second stock voice, so full-stock mode isn't one voice for eleven
+// minutes. Falls back to the same voice, which still works — it just reads as
+// one narrator rather than two people.
+export const OPENAI_VOICE_FOR = (role) =>
+  (role === 'narrator' && process.env.OPENAI_VOICE_NARRATOR) || OPENAI_VOICE;
 export const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
 
 export const VOICE_DIRECTION = {
-  dad: 'Warm, unhurried, talking to your own kid in the car. Dry humor, never ' +
-       'cutesy. You are genuinely interested in this, not performing interest.',
-  host: 'Clear and engaging documentary narration for a smart twelve-year-old. ' +
-        'Never talk down. Let the facts carry the weight; do not oversell.',
+  parent: 'Warm, unhurried, talking to your own kid in the car. Dry humor, never ' +
+          'cutesy. You are genuinely interested in this, not performing interest.',
+  narrator: 'Clear and engaging documentary narration for a smart twelve-year-old. ' +
+            'Never talk down. Let the facts carry the weight; do not oversell.',
 };
 
 // --- Audio ----------------------------------------------------------------
@@ -259,6 +305,24 @@ export const AUDIO = {
   bitrate: '96k',
   sampleRate: 44100,
   channels: 1,
+
+  // --- handing off between voices ------------------------------------------
+  // Two places in the show cut straight from one voice to another with no music
+  // in between: welcome (parent) into act one (narrator), and act two back into
+  // the outro (parent). Both were butt-joined, and the second is the worst
+  // place in the show for it — the narrator's last word and the parent's first
+  // arrived back to back, so the turn landed like an edit rather than a
+  // handover.
+  //
+  // Segment `trailingSilence` did not cover this: it is a Hume parameter, so it
+  // applied to the parent and was ignored on the OpenAI-voiced acts. Putting
+  // the gap here instead makes it engine-independent — it is an edit decision,
+  // not a synthesis one, and it belongs with the other edit decisions.
+  //
+  // These are gaps between ADJACENT SPOKEN segments only; anywhere music sits
+  // between two segments it already does this job.
+  voiceChangeGap: 0.75,  // seconds — a different person starts talking
+  sameVoiceGap: 0.25,    // seconds — same person, new movement
 
   // Every element is normalised to a known loudness BEFORE the gains below are
   // applied — otherwise "-18 dB under speech" means nothing, because it is

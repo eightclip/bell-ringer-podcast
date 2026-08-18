@@ -18,7 +18,7 @@ import { getShow, WEEK_ARC, BRAND } from '../config/show.mjs';
 import { unitFor } from './plan.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, step, ok, warn, log, isMain } from './lib.mjs';
 
-const researchSystem = (show) => `You are the researcher for "${show.title}", an education podcast for ${show.kid.name}, who is in grade ${show.kid.grade}.
+const researchSystem = (show) => `You are the researcher for "${show.title}", an education podcast for a student in grade ${show.listener.grade}.
 
 Your sources are hard-restricted to museums, national laboratories, government agencies, national libraries, universities, and peer-reviewed open textbooks. You physically cannot reach anything else, so do not try — search within what you have.
 
@@ -147,7 +147,7 @@ async function researchTopic(show, week, unit, { big = false } = {}) {
     maxResumes: big ? 2 : 2,
     timeoutMs: (big ? 7 : 6) * 60 * 1000,
     prompt:
-`This is what ${show.kid.name} (grade ${show.kid.grade}) is studying the week of ${week}:
+`This is what a grade ${show.listener.grade} student is studying the week of ${week}:
 
 ${unit}
 
@@ -170,7 +170,7 @@ export async function research(showId, week) {
   const unit = await unitFor(show, week, dir);
   if (!unit) {
     throw new Error(
-      `No topic for ${show.kid.name}, week of ${week}. ` +
+      `No topic for ${show.id}, week of ${week}. ` +
       (show.planFile
         ? `Expected it in ${show.planFile} — check the week is inside the school year.`
         : `Paste it at ${BRAND.siteUrl}, or write ${join(dir, 'input.json')} by hand.`),
@@ -191,7 +191,7 @@ export async function research(showId, week) {
     tokens.requests += u.requests || 1;
   };
 
-  step(`Researching ${show.kid.name} — week of ${week}`);
+  step(`Researching ${show.title} — week of ${week}`);
   log(`  unit: ${String(unit).slice(0, 120).replace(/\s+/g, ' ')}…`);
 
   // Briefings are the expensive part. Cache so a failure downstream doesn't buy

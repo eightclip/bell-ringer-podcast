@@ -56,6 +56,16 @@ function cutExcerpt(track, seconds, out) {
   return out;
 }
 
+// --- a gap between two spoken segments -----------------------------------
+// Written as its own file rather than padded onto the end of a segment so the
+// chapter offsets stay honest: the gap belongs between two chapters, not inside
+// the one before it.
+function renderGap(seconds, out) {
+  run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono',
+    '-t', String(seconds), '-ac', String(AUDIO.channels), ...FLOAT, out]);
+  return seconds;
+}
+
 // --- music-only segment (theme, stings) ----------------------------------
 function renderMusicBed(track, seconds, out, { fadeIn = 1.2, fadeOut = 1.8, target } = {}) {
   if (!track) {
@@ -186,9 +196,24 @@ export async function assembleWeek(showId, week) {
     let cursor = 0;
     const chapters = [];
 
+    let prevSpoken = null;   // the last segment that had a voice
+
     for (const spec of SEGMENTS) {
       const wav = join(work, `${spec.id}.wav`);
       let seconds;
+
+      // Adjacent spoken segments need air between them. A change of voice gets
+      // a real beat; the same voice starting a new movement gets a short one.
+      // Music segments reset this, because a theme or a sting already separates
+      // what is either side of it.
+      if (spec.voice && prevSpoken) {
+        const gap = prevSpoken.voice === spec.voice ? AUDIO.sameVoiceGap : AUDIO.voiceChangeGap;
+        if (gap > 0) {
+          const gapFile = join(work, `gap-${prevSpoken.id}-${spec.id}.wav`);
+          cursor += renderGap(gap, gapFile);
+          parts.push(gapFile);
+        }
+      }
 
       if (!spec.voice) {
         const track = spec.music === 'theme' ? theme : pickTrack('sting', week, spec.id.length + ep.part);
@@ -205,6 +230,7 @@ export async function assembleWeek(showId, week) {
       chapters.push({ id: spec.id, label: spec.label, start: cursor, seconds });
       cursor += seconds;
       parts.push(wav);
+      prevSpoken = spec.voice ? spec : null;
     }
 
     // Concat, then loudness-normalise the whole show in one pass so levels are

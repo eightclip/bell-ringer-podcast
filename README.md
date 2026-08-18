@@ -17,6 +17,11 @@ npm run demo             # one real episode, on your machine, ~$2–4
 The demo tells you what it will spend before it spends it, uses a bundled
 example curriculum, and uploads nothing.
 
+**Using an AI coding agent?** Point Claude Code, Codex, or Cursor at
+**[AGENTS.md](AGENTS.md)** and say "set this up for me". It will interview you
+first — grade, pronouns, whose voice, where lesson plans come from — then do the
+configuration and stop at each step only you can do.
+
 ---
 
 ## Why it exists
@@ -90,9 +95,29 @@ lower. `npm run costs` reads the ledger and shows whether caching is working.
 
 ## Making it yours
 
-Full walkthrough in **[docs/SETUP.md](docs/SETUP.md)**. The short version:
+Full walkthrough in **[docs/SETUP.md](docs/SETUP.md)**, or hand
+[AGENTS.md](AGENTS.md) to a coding agent. The short version:
 
-1. Put your kid's curriculum in `plans/` — see `plans/example-year.json` for
+Everything about the listener lives in one place — `SHOWS.<id>.listener` in
+`config/show.mjs`:
+
+```js
+listener: {
+  grade: 6,
+  age: 'eleven or twelve',
+  pronouns: 'they',   // 'he' | 'she' | 'they'
+  term: 'kiddo',      // rare direct address; '' for none
+}
+```
+
+Set `pronouns` and the entire writer's brief agrees, verbs included. It ships as
+`they`, which is right for a child whose pronouns you haven't been told and
+right for a child who uses it.
+
+The two voice roles are **PARENT** (cold open, welcome, outro) and **NARRATOR**
+(the acts) — named for the job, not for who fills it.
+
+1. Put the curriculum in `plans/` — see `plans/example-year.json` for
    the shape, or paste it week by week at `/admin` on the deployed site.
 2. Edit `config/show.mjs` — segment timings, per-segment acting direction,
    palette, audio chain, voice modes. Most changes live in this one file.

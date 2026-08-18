@@ -160,11 +160,24 @@ export function countWords(s) {
 }
 
 // Strip stage directions so only spoken words reach the TTS engine.
+//
+// Paragraph breaks are PRESERVED, and that is the point. Both OpenAI and Hume
+// read a blank line as a structural boundary and give it breath; collapsing all
+// whitespace to single spaces — which this used to do — handed the engine a
+// 1000-character wall and threw away every pause the writer had built. An act
+// with nineteen paragraphs was arriving as one. That is the difference between
+// a narrator who lands a sentence and one who runs them together.
+//
+// Horizontal whitespace inside a paragraph is still collapsed, and runs of
+// three or more newlines are normalised to two, so the engine sees exactly one
+// kind of boundary.
 export function spokenOnly(s) {
   return s
     .replace(/\[[^\]]*\]/g, ' ')   // [MUSIC], [STING], [PAUSE 3s]
     .replace(/\([^)]*\)/g, ' ')    // (beat)
     .replace(/^\s*[A-Z][A-Z ]+:\s*/gm, '') // SPEAKER:
-    .replace(/\s+/g, ' ')
+    .replace(/[^\S\n]+/g, ' ')     // collapse spaces/tabs, keep newlines
+    .replace(/ *\n */g, '\n')      // no trailing space around a break
+    .replace(/\n{3,}/g, '\n\n')    // at most one blank line
     .trim();
 }
