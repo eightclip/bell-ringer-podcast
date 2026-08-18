@@ -1,0 +1,125 @@
+name: Render the week
+
+# Saturday evening, with a Sunday afternoon retry.
+#
+# Renders all five episodes for the week ahead — research, scripts, voice,
+# artwork, mix, upload — so there is a clear day in hand to listen to them and
+# confirm they are in the feed before Monday's drive, and to fix anything that
+# needs fixing (more music, a re-render) while it still matters.
+#
+# The Sunday run is a safety net, not a second render: both resolve to the same
+# Monday, and a week that already has a manifest in R2 is skipped, so if
+# Saturday succeeded Sunday costs nothing and exits green. If Saturday failed —
+# an API outage, a bad night — Sunday quietly picks it up.
+on:
+  schedule:
+    - cron: '0 1 * * 0'    # Sat 6pm PDT / Sun 01:00 UTC — the real render
+    - cron: '0 21 * * 0'   # Sun 2pm PDT / Sun 21:00 UTC — retry if Saturday failed
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'Monday of the week to render (YYYY-MM-DD). Blank = next Monday.'
+        required: false
+      force:
+        description: 'Re-run stages that already have output'
+        type: boolean
+        default: false
+
+concurrency:
+  group: render
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install ffmpeg + ImageMagick
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg imagemagick
+          ffmpeg -version | head -1
+          (magick -version || convert -version) | head -1
+
+      - run: npm ci
+
+      # The voice cache is the expensive thing to lose — a cache hit means an
+      # unchanged line costs nothing to re-render.
+      - name: Restore voice cache
+        uses: actions/cache@v4
+        with:
+          path: build/.voice-cache
+          key: voice-${{ hashFiles('config/show.mjs') }}-${{ github.run_id }}
+          restore-keys: |
+            voice-${{ hashFiles('config/show.mjs') }}-
+            voice-
+
+      - name: Render
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          HUME_API_KEY: ${{ secrets.HUME_API_KEY }}
+          HUME_VOICE_DAD: ${{ secrets.HUME_VOICE_DAD }}
+          HUME_VOICE_HOST: ${{ secrets.HUME_VOICE_HOST }}
+          HUME_VOICE_DAD_PROVIDER: CUSTOM_VOICE
+          HUME_VOICE_HOST_PROVIDER: HUME_AI
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_BASE: ${{ secrets.R2_PUBLIC_BASE }}
+          FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
+          VOICE_MODE: ${{ vars.VOICE_MODE || 'hybrid' }}
+        run: node pipeline/run.mjs --all-shows ${{ inputs.week }} ${{ inputs.force && '--force' || '' }}
+
+      # Ask the questions a podcast app will ask, over the public internet,
+      # using only the published URLs: is every episode's audio actually there,
+      # the size the feed promises, seekable, with artwork, and does the feed
+      # itself load. The render step going green only means the job finished.
+      #
+      # Not `continue-on-error`: if Saturday's render produced something a
+      # listener can't play, that has to be visible on Sunday while there is
+      # still a day to fix it. That is the entire point of moving this earlier.
+      - name: Verify the week is airable
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_BASE: ${{ secrets.R2_PUBLIC_BASE }}
+          FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
+        run: node pipeline/verify.mjs ${{ inputs.week }}
+
+      # Sources are the receipts. Keep them even when the audio is on R2 —
+      # they're what you check when a fact sounds off.
+      #
+      # The glob is build/<show>/<week>/, two levels deep. It was build/*/ for
+      # a long time, matched nothing, and quietly uploaded no artifacts on
+      # every single run while the job stayed green.
+      #
+      # `warn` rather than `error` even so: a run that skips every show —
+      # because the week is already published, or no show has a plan yet — is a
+      # correct outcome that legitimately produces no files, and failing it
+      # would be the same mistake as failing the run for a missing grade 7.
+      - name: Keep the receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: week-${{ inputs.week || 'next' }}
+          path: |
+            build/*/*/research.json
+            build/*/*/sources.json
+            build/*/*/scripts.json
+            build/*/*/manifest.json
+            build/*/*/cost.json
+            build/*/*/feed-preview.xml
+          retention-days: 90
+          if-no-files-found: warn

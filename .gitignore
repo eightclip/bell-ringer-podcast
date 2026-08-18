@@ -1,0 +1,39 @@
+node_modules/
+
+# Secrets. The bare name is not enough: an editor or a hurried `cp` will
+# happily make .env.bak, .env.local, .env.save — and a single one of those
+# committed is every credential in the project, permanently, in git history.
+.env
+.env.*
+!.env.example
+
+# Build output: audio, artwork, manifests. Large, regenerable, and specific to
+# one family's week. The JSON stages are un-ignored below because they are the
+# cheap, reviewable record of what the model researched and wrote.
+build/
+!build/*/*/brief.json
+!build/*/*/research.json
+!build/*/*/scripts.json
+!build/*/*/sources.json
+
+# Media. Never commit music or audio you licensed — your licence almost
+# certainly does not cover redistribution from a public repo.
+*.mp3
+*.wav
+*.m4a
+
+# Your own curriculum. Ships as an example only; keep real school documents,
+# which identify a real child and a real teacher, out of the repo.
+plans/*.pdf
+plans/*-year.json
+plans/*-blocks.json
+!plans/example-year.json
+
+# Generated artwork
+assets/cover-*.jpg
+assets/_type.png
+
+.DS_Store
+.vercel/
+site/.next/
+site/node_modules/

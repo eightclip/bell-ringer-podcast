@@ -1,0 +1,193 @@
+{
+  "show": "grade6",
+  "source": "EXAMPLE DATA \u2014 invented for the demo. Replace with your own.",
+  "note": "This is not a real curriculum. It exists so `npm run demo` produces a real episode on a fresh clone. Generate your own with `npm run planimport`, or hand-write this shape.",
+  "school_year": "2026-2027",
+  "generated_at": "2026-08-18T00:00:00.000Z",
+  "weeks": [
+    {
+      "week": "2026-09-07",
+      "block": 1,
+      "block_title": "Astronomy",
+      "week_of_block": 1,
+      "weeks_in_block": 3,
+      "subject": "Astronomy",
+      "essential_question": "How does watching the sky change the way we understand our own planet?",
+      "focus": [
+        "Rotation, revolution, and why we have seasons"
+      ],
+      "already_covered": [],
+      "vocabulary": [
+        "astronomy",
+        "rotation",
+        "revolution",
+        "orbit",
+        "axis",
+        "gravity",
+        "solar system",
+        "constellation",
+        "lunar phase",
+        "eclipse",
+        "scale",
+        "light-year"
+      ],
+      "reader": "A Wrinkle in Time",
+      "unit": "Main Lesson block 1: Astronomy (week 1 of 3).\nThe block's essential question: How does watching the sky change the way we understand our own planet?\nThis week narrows to: Rotation, revolution, and why we have seasons"
+    },
+    {
+      "week": "2026-09-14",
+      "block": 1,
+      "block_title": "Astronomy",
+      "week_of_block": 2,
+      "weeks_in_block": 3,
+      "subject": "Astronomy",
+      "essential_question": "How does watching the sky change the way we understand our own planet?",
+      "focus": [
+        "The Earth-Sun-Moon system: phases and eclipses"
+      ],
+      "already_covered": [
+        "Rotation, revolution, and why we have seasons"
+      ],
+      "vocabulary": [
+        "astronomy",
+        "rotation",
+        "revolution",
+        "orbit",
+        "axis",
+        "gravity",
+        "solar system",
+        "constellation",
+        "lunar phase",
+        "eclipse",
+        "scale",
+        "light-year"
+      ],
+      "reader": "A Wrinkle in Time",
+      "unit": "Main Lesson block 1: Astronomy (week 2 of 3).\nThe block's essential question: How does watching the sky change the way we understand our own planet?\nThis week narrows to: The Earth-Sun-Moon system: phases and eclipses"
+    },
+    {
+      "week": "2026-09-21",
+      "block": 1,
+      "block_title": "Astronomy",
+      "week_of_block": 3,
+      "weeks_in_block": 3,
+      "subject": "Astronomy",
+      "essential_question": "How does watching the sky change the way we understand our own planet?",
+      "focus": [
+        "Scale: how far apart things really are"
+      ],
+      "already_covered": [
+        "Rotation, revolution, and why we have seasons",
+        "The Earth-Sun-Moon system: phases and eclipses"
+      ],
+      "vocabulary": [
+        "astronomy",
+        "rotation",
+        "revolution",
+        "orbit",
+        "axis",
+        "gravity",
+        "solar system",
+        "constellation",
+        "lunar phase",
+        "eclipse",
+        "scale",
+        "light-year"
+      ],
+      "reader": "A Wrinkle in Time",
+      "unit": "Main Lesson block 1: Astronomy (week 3 of 3).\nThe block's essential question: How does watching the sky change the way we understand our own planet?\nThis week narrows to: Scale: how far apart things really are"
+    },
+    {
+      "week": "2026-09-28",
+      "block": 2,
+      "block_title": "Ancient Rome",
+      "week_of_block": 1,
+      "weeks_in_block": 3,
+      "subject": "Ancient Rome",
+      "essential_question": "What holds an empire together, and what pulls one apart?",
+      "focus": [
+        "Republic to empire: how the government changed"
+      ],
+      "already_covered": [],
+      "vocabulary": [
+        "republic",
+        "senate",
+        "consul",
+        "aqueduct",
+        "legion",
+        "province",
+        "patrician",
+        "plebeian",
+        "forum",
+        "empire",
+        "concrete",
+        "census"
+      ],
+      "reader": "Detectives in Togas",
+      "unit": "Main Lesson block 2: Ancient Rome (week 1 of 3).\nThe block's essential question: What holds an empire together, and what pulls one apart?\nThis week narrows to: Republic to empire: how the government changed"
+    },
+    {
+      "week": "2026-10-05",
+      "block": 2,
+      "block_title": "Ancient Rome",
+      "week_of_block": 2,
+      "weeks_in_block": 3,
+      "subject": "Ancient Rome",
+      "essential_question": "What holds an empire together, and what pulls one apart?",
+      "focus": [
+        "Roads, aqueducts, and concrete as instruments of power"
+      ],
+      "already_covered": [
+        "Republic to empire: how the government changed"
+      ],
+      "vocabulary": [
+        "republic",
+        "senate",
+        "consul",
+        "aqueduct",
+        "legion",
+        "province",
+        "patrician",
+        "plebeian",
+        "forum",
+        "empire",
+        "concrete",
+        "census"
+      ],
+      "reader": "Detectives in Togas",
+      "unit": "Main Lesson block 2: Ancient Rome (week 2 of 3).\nThe block's essential question: What holds an empire together, and what pulls one apart?\nThis week narrows to: Roads, aqueducts, and concrete as instruments of power"
+    },
+    {
+      "week": "2026-10-12",
+      "block": 2,
+      "block_title": "Ancient Rome",
+      "week_of_block": 3,
+      "weeks_in_block": 3,
+      "subject": "Ancient Rome",
+      "essential_question": "What holds an empire together, and what pulls one apart?",
+      "focus": [
+        "Daily life, and who it was good for"
+      ],
+      "already_covered": [
+        "Republic to empire: how the government changed",
+        "Roads, aqueducts, and concrete as instruments of power"
+      ],
+      "vocabulary": [
+        "republic",
+        "senate",
+        "consul",
+        "aqueduct",
+        "legion",
+        "province",
+        "patrician",
+        "plebeian",
+        "forum",
+        "empire",
+        "concrete",
+        "census"
+      ],
+      "reader": "Detectives in Togas",
+      "unit": "Main Lesson block 2: Ancient Rome (week 3 of 3).\nThe block's essential question: What holds an empire together, and what pulls one apart?\nThis week narrows to: Daily life, and who it was good for"
+    }
+  ]
+}

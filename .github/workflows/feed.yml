@@ -1,0 +1,45 @@
+name: Refresh feed
+
+# School mornings, hours before anyone is up. Rebuilding the feed is what
+# releases that morning's episode; the audio was uploaded the Saturday before.
+#
+# The house is Pacific, so 09:20 UTC is 2:20am in summer and 1:20am in winter —
+# early enough that the phone has the rest of the night on wifi to pull a 7MB
+# file down before the drive.
+on:
+  schedule:
+    - cron: '20 9 * * 1-5'   # 2:20am PDT / 1:20am PST
+  workflow_dispatch:
+    inputs:
+      all:
+        description: 'Expose every episode regardless of air date'
+        type: boolean
+        default: false
+
+concurrency:
+  group: feed
+  cancel-in-progress: true
+
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_BASE: ${{ secrets.R2_PUBLIC_BASE }}
+          FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
+        run: |
+          for show in grade6 grade7; do
+            node pipeline/feed.mjs "$show" ${{ inputs.all && '--all' || '' }} || true
+          done

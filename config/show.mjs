@@ -1,0 +1,345 @@
+import './env.mjs';
+
+// Bell Ringer — show bible.
+//
+// Two shows, not one. Each kid gets his own feed, his own artwork, and his own
+// twelve-minute episode. The earlier design put both boys in one 24-minute
+// episode, which meant each of them sat through eight minutes about a subject
+// he isn't taking. Separate feeds halve the runtime and double the relevance.
+
+export const BRAND = {
+  name: process.env.SHOW_BRAND_NAME || 'Bell Ringer',
+  author: process.env.SHOW_AUTHOR || 'Set SHOW_AUTHOR in .env',
+  language: 'en-us',
+  category: 'Education',
+  subcategory: 'Courses',
+  explicit: false,
+  siteUrl: process.env.SITE_URL || 'http://localhost:3000',
+
+  // The single switch that decides whether this show is discoverable.
+  //
+  // false emits <itunes:block>Yes</itunes:block>, which tells Apple and every
+  // directory that mirrors it not to list the show. The feed still works for
+  // anyone holding the URL — that is what "unlisted" means here.
+  //
+  // Flipping this to true is the moment the show becomes public, and it is
+  // not cleanly reversible: directories cache feeds, and a show that has been
+  // indexed can be removed but not un-remembered. It lives here, on its own,
+  // rather than buried in the feed generator, so that turning it on is a
+  // deliberate and reviewable act.
+  //
+  // Do not flip it until your audio has moved off the rate-limited r2.dev
+  // endpoint onto a custom domain — a feed URL submitted to Apple is expensive
+  // to change later.
+  //
+  // Ships false. If you are making a show from a real child's real timetable,
+  // consider carefully whether it should be in a public directory at all; an
+  // unlisted feed does the same job for the family that actually listens.
+  listed: process.env.SHOW_LISTED === 'true',
+};
+
+// Shows are keyed by grade, not by name. The id reaches the outside world —
+// it is in the feed URL, every audio path and the artwork filenames — so a
+// name here would put two children's names on a public URL for no benefit.
+// `kid.name` stays for the writer's own understanding and never ships: the
+// scripts address the listener as "you".
+export const SHOWS = {
+  grade6: {
+    id: 'grade6',
+    title: 'Bell Ringer — 6th Grade',
+    slug: 'grade6',
+    label: '6th Grade',
+    kid: { id: 'grade6', name: 'the listener', grade: 6 },
+    tagline: 'Sixth grade, on the way to school.',
+    description:
+      'A daily twelve-minute ride-to-school show built from what a sixth grader is ' +
+      'actually studying that week. Researched from museums, national labs, and ' +
+      'university sources — every fact traceable to a named page.',
+    // A full-year block plan, so weeks come from a calendar rather than from
+    // someone remembering to paste an email.
+    planFile: 'plans/example-year.json',
+    accent: 'sunsets',
+  },
+  grade7: {
+    id: 'grade7',
+    title: 'Bell Ringer — 7th Grade',
+    slug: 'grade7',
+    label: '7th Grade',
+    kid: { id: 'grade7', name: 'the listener', grade: 7 },
+    tagline: 'Seventh grade, on the way to school.',
+    description:
+      'A daily twelve-minute ride-to-school show built from what a seventh grader is ' +
+      'actually studying that week. Researched from museums, national labs, and ' +
+      'university sources — every fact traceable to a named page.',
+    planFile: null, // no year plan: paste each week in at /admin on your site
+    accent: 'deepsea',
+  },
+};
+
+export const showIds = () => Object.keys(SHOWS);
+
+export function getShow(id) {
+  const s = SHOWS[id];
+  if (!s) throw new Error(`Unknown show "${id}". Known: ${showIds().join(', ')}`);
+  return s;
+}
+
+// --- The week's arc -------------------------------------------------------
+// Five episodes that build, not five arbitrary slices. Unchanged by the split
+// — it was always the strongest part of the format.
+
+export const WEEK_ARC = [
+  {
+    day: 'Monday',
+    part: 1,
+    beat: 'The Question',
+    brief:
+      'What are we actually asking this week, and why did anyone care enough ' +
+      'to go find out? Open the loop. Do not resolve it. End on the question ' +
+      'restated, sharper than it was at the top.',
+  },
+  {
+    day: 'Tuesday',
+    part: 2,
+    beat: 'The Story',
+    brief:
+      'The people and the history. Who was in the room, what did they get ' +
+      'wrong first, what did it cost them. Narrative over exposition — this is ' +
+      'the episode that should feel like a story, not a lesson.',
+  },
+  {
+    day: 'Wednesday',
+    part: 3,
+    beat: 'The Mechanism',
+    brief:
+      'How it actually works. The hard part. Go slower here than feels ' +
+      'necessary, use one concrete analogy per concept and reuse it rather ' +
+      'than piling on new ones. This is the episode that earns the week.',
+  },
+  {
+    day: 'Thursday',
+    part: 4,
+    beat: 'The Argument',
+    brief:
+      'Where experts genuinely disagree, or the edge cases that break the ' +
+      'simple version they were taught. Model intellectual honesty: name the ' +
+      'strongest version of each side. Never manufacture a controversy that ' +
+      'the sources do not support.',
+  },
+  {
+    day: 'Friday',
+    part: 5,
+    beat: 'The Recap + Quiz',
+    brief:
+      'Pull the week together, then a five-question quiz — asked out loud with ' +
+      'a real pause before each answer, so he can shout it in the car. Close ' +
+      'with a one-line tease of next week.',
+  },
+];
+
+// --- Episode structure ----------------------------------------------------
+// Target ~11 minutes. Half the drive, so it ends before the drop-off rather
+// than getting cut off mid-sentence — and a 12-year-old will actually finish it.
+//
+// One kid means one subject, so the two acts are now a teach and a turn rather
+// than one act per brother.
+
+// `direction` is sent to Octave as acting instructions. With a voice already
+// specified, the description steers the performance rather than inventing a
+// new voice — so the same clone can open cold and land an outro differently.
+// `speed` is Octave's non-linear rate (0.5 slow — 2.0 fast); 1.0 is normal.
+export const SEGMENTS = [
+  { id: 'cold_open',   seconds: 20,  voice: 'dad',  music: null,         label: 'Cold open — the hook',
+    direction: 'Quiet and close, like the first thing said after the radio goes off. Land the first sentence and let it sit. Curious, not dramatic — never announce.',
+    speed: 0.94, trailingSilence: 0.6 },
+  { id: 'theme',       seconds: 15,  voice: null,   music: 'theme',      label: 'Theme' },
+  { id: 'welcome',     seconds: 30,  voice: 'dad',  music: 'under_soft', label: "Welcome + today's map",
+    direction: 'Easy and offhand, the way you talk while pulling out of the driveway. Warm, slightly amused, unhurried.',
+    speed: 1.0, trailingSilence: 0.4 },
+  { id: 'act_one',     seconds: 300, voice: 'host', music: null,         label: 'Act One — the teach',
+    direction: 'Clear documentary narration. Even and unhurried, letting the facts carry weight. Never bright or salesy. Leave real space at the end of each sentence.',
+    speed: 1.0, trailingSilence: 0.3 },
+  { id: 'break_one',   seconds: 15,  voice: null,   music: 'sting',      label: 'Music break' },
+  { id: 'act_two',     seconds: 210, voice: 'host', music: null,         label: 'Act Two — the turn',
+    direction: 'Same narration, a shade more urgency — this is the complication. Still calm; the tension is in the material, not the delivery. Leave real space at the end of each sentence.',
+    speed: 1.0, trailingSilence: 0.3 },
+  { id: 'outro',       seconds: 40,  voice: 'dad',  music: 'under_soft', label: 'Tomorrow on the show + outro',
+    direction: 'Wrapping up as you pull into the drop-off line. Affectionate and a little dry. The tease is thrown away, not sold.',
+    speed: 0.98, trailingSilence: 0.8 },
+  { id: 'outro_music', seconds: 25,  voice: null,   music: 'theme',      label: 'Outro music' },
+];
+
+export const segmentSpec = (id) => SEGMENTS.find((s) => s.id === id);
+
+export const TARGET_SECONDS = SEGMENTS.reduce((n, s) => n + s.seconds, 0); // 655s ≈ 10:55
+
+// Spoken-word pacing, measured rather than assumed — the two voices are not
+// close. A first full render clocked the clone at 160 wpm and the library
+// narrator at 215, so a single figure wrote the acts a third too short.
+//
+// Octave's `speed` turned out to be a weak lever on the library voice —
+// 1.00, 0.85, 0.78 and 0.70 measured 182, 200, 181 and 172 wpm, which is mostly
+// noise around 180. Rather than fight it, the host moved to OpenAI, which
+// narrates at 155-164 wpm without being asked and costs a fifth as much.
+// Dad stays on the clone. Re-measure if either voice changes.
+export const WORDS_PER_MINUTE = { dad: 160, host: 157 };
+
+export function wordBudget(seconds, role = 'host') {
+  const wpm = WORDS_PER_MINUTE[role] ?? 165;
+  return Math.round((seconds / 60) * wpm);
+}
+
+// --- Voice ----------------------------------------------------------------
+// Two voices is not a nicety — even eleven minutes of one synthetic voice is
+// wearing. Dad opens and closes; the co-host carries the teach.
+//
+// duo-hume   — Dad + a second Hume voice. Works with voices already owned.
+// hybrid     — Dad on Hume, stock OpenAI co-host. Much cheaper per minute.
+// full-hume  — Dad narrates everything.
+// full-stock — no Hume at all; dry runs that shouldn't burn cloned-voice credits.
+
+export const VOICE_MODES = {
+  'duo-hume':  { dad: 'hume',   host: 'hume-host' },
+  hybrid:      { dad: 'hume',   host: 'openai' },
+  'full-hume': { dad: 'hume',   host: 'hume' },
+  'full-stock':{ dad: 'openai', host: 'openai' },
+};
+
+// Each voice carries its own provider: a cloned voice is CUSTOM_VOICE, one from
+// Hume's library is HUME_AI. Sending the wrong provider is a 404 that reads
+// like the voice was deleted.
+export const HUME_VOICES = {
+  hume: () => ({
+    id: process.env.HUME_VOICE_DAD || process.env.HUME_VOICE_ID,
+    provider: process.env.HUME_VOICE_DAD_PROVIDER || 'CUSTOM_VOICE',
+  }),
+  'hume-host': () => ({
+    id: process.env.HUME_VOICE_HOST || process.env.HUME_VOICE_DAD,
+    provider: process.env.HUME_VOICE_HOST_PROVIDER || process.env.HUME_VOICE_DAD_PROVIDER || 'CUSTOM_VOICE',
+  }),
+};
+
+export const VOICE_MODE = process.env.VOICE_MODE || 'duo-hume';
+
+export function voiceEngineFor(role) {
+  const mode = VOICE_MODES[VOICE_MODE];
+  if (!mode) throw new Error(`Unknown VOICE_MODE "${VOICE_MODE}". Use one of: ${Object.keys(VOICE_MODES).join(', ')}`);
+  return mode[role];
+}
+
+export const OPENAI_VOICE = process.env.OPENAI_VOICE || 'sage';
+export const OPENAI_TTS_MODEL = 'gpt-4o-mini-tts';
+
+export const VOICE_DIRECTION = {
+  dad: 'Warm, unhurried, talking to your own kid in the car. Dry humor, never ' +
+       'cutesy. You are genuinely interested in this, not performing interest.',
+  host: 'Clear and engaging documentary narration for a smart twelve-year-old. ' +
+        'Never talk down. Let the facts carry the weight; do not oversell.',
+};
+
+// --- Audio ----------------------------------------------------------------
+export const AUDIO = {
+  loudnessTarget: -16,   // LUFS, mono podcast standard
+  // loudnorm's OWN ceiling, and deliberately loose. In linear mode loudnorm
+  // applies one flat gain and quietly reduces it whenever that gain would
+  // breach TP — so a tight number here doesn't buy headroom, it buys a quieter
+  // show. Asking for -4.5 landed the week at -17.8 LUFS instead of -16.
+  // Loudness is set here; the ceiling is enforced downstream by the limiter.
+  truePeak: -1.0,        // dBTP
+  // The ceiling that actually matters, enforced by MASTER_CHAIN after
+  // normalisation. Sized for the encoder, measured rather than guessed: at
+  // 64kbps the decoder reconstructs samples ~3.3 dB above what it was handed
+  // (a mix ceilinged at -3.0 came back at +0.3 dBFS). At 96kbps that collapses
+  // to ~0.4 dB, which is the main reason the bitrate went up.
+  masterCeiling: -2.0,   // dBFS, pre-encode
+  // 96k, not 64k. Storage on R2 is $0.015/GB-month and egress is free, so a
+  // year of both shows costs pennies more — while 64kbps was both audibly
+  // crunchy on the music and the sole reason the master needed 4 dB of
+  // headroom it couldn't spare.
+  bitrate: '96k',
+  sampleRate: 44100,
+  channels: 1,
+
+  // Every element is normalised to a known loudness BEFORE the gains below are
+  // applied — otherwise "-18 dB under speech" means nothing, because it is
+  // -18 dB under whatever level that particular library track happened to
+  // ship at. That bug put the theme 15 dB too quiet (-33.9 LUFS against speech
+  // at -19) and let the voice-clone segments run 4.5 dB hotter than the host.
+  speechAnchor: -19,     // LUFS, per speech segment, after VOICE_CHAIN
+  musicBedGain: -18,     // dB relative to speechAnchor, under a voice
+  musicSoloGain: -4,     // dB relative to speechAnchor, playing alone
+  crossfade: 1.5,        // seconds
+};
+
+// The voice chain — what makes it sound like radio rather than a text-to-speech
+// demo. Applied to speech only, never to music, and always before the mix so
+// the bed ducks under a already-even voice.
+//
+// Order matters and this is the broadcast order:
+//   1. highpass   strip rumble and breath thumps below the voice
+//   2. de-mud     a narrow cut around 200Hz; TTS piles up there and it reads
+//                 as "boxy" on car speakers
+//   3. compress   the actual point. 3.5:1 with a soft knee pulls the quiet
+//                 ends of sentences up to meet the loud middles, which is why
+//                 broadcast voices stay intelligible over road noise
+//   4. presence   a gentle lift around 3kHz for consonants and diction
+//   5. limiter    catches the plosives the compressor let through
+//
+// Deliberately moderate. Over-compressed voice is fatiguing over twelve
+// minutes, and the boys are hearing this five mornings a week.
+export const VOICE_CHAIN = [
+  'highpass=f=75',
+  'equalizer=f=200:t=q:w=1.1:g=-2.5',
+  'acompressor=threshold=-20dB:ratio=3.5:attack=8:release=160:knee=6:makeup=3',
+  'equalizer=f=3200:t=q:w=1.4:g=2.5',
+  'alimiter=limit=0.92:attack=4:release=60',
+].join(',');
+
+// The real ceiling, applied AFTER loudnorm has set the level. This is doing
+// genuine work — a few dB off the plosives so the encoder has room — which is
+// why it has to come second: loudnorm decides how loud, the limiter decides how
+// tall, and neither can do the other's job.
+//
+// Note `level=disabled`. ffmpeg's alimiter auto-levels the signal UP to its
+// limit by default, so adding it "for safety" after loudnorm pushed the peaks
+// back toward full scale and the encoder then clipped them.
+const dbToLinear = (db) => Math.round(10 ** (db / 20) * 1000) / 1000;
+export const MASTER_CHAIN =
+  `alimiter=limit=${dbToLinear(AUDIO.masterCeiling)}:level=disabled:attack=5:release=80`;
+
+// --- Artwork --------------------------------------------------------------
+export const ART = {
+  size: 3000,
+  // Duotone, not a tint: the photo goes to high-contrast black and white, then
+  // shadows map to `shadow` and highlights to `highlight`. A flat colorize wash
+  // reads pastel at thumbnail size; mapping the endpoints keeps blacks black,
+  // which is what makes it look printed.
+  //
+  // Each show has a fixed accent so the two feeds never look alike in a
+  // library, and the week rotates within a family of tints on that accent.
+  overlays: [
+    { name: 'sunsets', label: 'Sunsets Through Windows', shadow: '#160C06', highlight: '#E68A58' },
+    { name: 'deepsea', label: 'Jarred Deep Sea', shadow: '#091013', highlight: '#4482A3' },
+    { name: 'olive', label: 'Olives Before Dinner', shadow: '#11120A', highlight: '#818546' },
+    { name: 'wood', label: 'Fresh Cut Wood', shadow: '#150B07', highlight: '#884529' },
+    { name: 'ocean', label: 'Ocean Wave Break', shadow: '#0C100D', highlight: '#99B7A4' },
+    { name: 'horsing', label: 'Horsing Around', shadow: '#141008', highlight: '#C3A05B' },
+    { name: 'sky', label: 'Sky to a Bird', shadow: '#0A1012', highlight: '#9BC0CC' },
+    { name: 'berry', label: 'Blended Strawberries', shadow: '#160608', highlight: '#F5B1B8' },
+    { name: 'snow', label: 'Day Old Snow', shadow: '#160C06', highlight: '#FFE4D2' },
+  ],
+
+  contrast: '12x42%',
+  // Anton is the shipped default because it is SIL Open Font License — this
+  // repo can redistribute it. A hand-drawn, slightly irregular display face
+  // sits better with archival source photography, so if you own one, drop the
+  // file in assets/fonts/ and name it here. Any fallback below is used if the
+  // named file is missing, so a bad name degrades instead of crashing.
+  titleFont: 'Anton-Regular.ttf',
+  fallbackFonts: ['ArchivoBlack-Regular.ttf'],
+};
+
+export function paletteFor(showId) {
+  const show = getShow(showId);
+  return ART.overlays.find((o) => o.name === show.accent) || ART.overlays[0];
+}

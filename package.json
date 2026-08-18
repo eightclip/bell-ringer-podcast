@@ -1,0 +1,41 @@
+{
+  "name": "bell-ringer",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "A daily ride-to-school podcast built from a kid's actual lesson plans \u2014 researched from institutional sources, fact-checked against the page each claim came from, voiced, mixed, and published to a private feed.",
+  "scripts": {
+    "demo": "node pipeline/demo.mjs",
+    "week": "node pipeline/run.mjs",
+    "research": "node pipeline/research.mjs",
+    "script": "node pipeline/script.mjs",
+    "voice": "node pipeline/voice.mjs",
+    "art": "node pipeline/art.mjs",
+    "assemble": "node pipeline/assemble.mjs",
+    "publish": "node pipeline/publish.mjs",
+    "feed": "node pipeline/feed.mjs",
+    "cover": "node pipeline/art.mjs --cover",
+    "plan": "node pipeline/planimport.mjs",
+    "music": "node pipeline/music.mjs",
+    "costs": "node pipeline/costs.mjs",
+    "verify": "node pipeline/verify.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "@aws-sdk/client-s3": "^3.700.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "podcast",
+    "education",
+    "ai",
+    "text-to-speech",
+    "rss",
+    "claude",
+    "anthropic",
+    "homeschool"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

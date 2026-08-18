@@ -1,0 +1,254 @@
+/* Bell Ringer — a programme listing.
+ *
+ * The organising idea comes out of the artwork rather than being applied to it.
+ * Every cover is a duotone whose shadows map to a near-black, so the page is
+ * set on that same black: the art bleeds into the page instead of sitting on
+ * it. Once that is true there is nothing left for a frame, a mount, a drop
+ * shadow or a tilt to do, which is the point — the earlier version reached for
+ * all four and ended up in costume.
+ *
+ * Rules, therefore:
+ *   - The display face appears exactly once, as the wordmark. A display face
+ *     used everywhere stops being a display face.
+ *   - No rotation, no border-radius, no box-shadow, anywhere.
+ *   - One accent per show, taken from that show's own duotone. Never two on
+ *     screen competing.
+ *   - Hairlines and typographic scale do the separating. Boxes don't.
+ */
+
+/* The wordmark face. Rokkitt Black is the OFL default so this repo ships
+   complete; swap in your own display face here and in --font-display. */
+@font-face {
+  font-family: 'Rokkitt';
+  src: url('/fonts/Rokkitt-Regular.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+/* No italic face is loaded on purpose — see .lede em. */
+@font-face {
+  font-family: 'Rokkitt';
+  src: url('/fonts/Rokkitt-Bold.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Rokkitt';
+  src: url('/fonts/Rokkitt-Black.woff2') format('woff2');
+  font-weight: 900; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* Typefaces. Both default to the bundled OFL Rokkitt so a fresh clone
+     renders correctly with no licensed files. Point them at your own faces
+     after adding the woff2 to site/public/fonts/ and an @font-face above. */
+  --font-display: 'Rokkitt';
+  --font-label: 'Rokkitt';
+
+  /* The black the duotone shadows resolve to, so covers meet the page. */
+  --ground: #14100D;
+  --paper:  #F0E3D7;
+  --mute:   rgba(240, 227, 215, .58);
+  --faint:  rgba(240, 227, 215, .34);
+  --hair:   rgba(240, 227, 215, .16);
+  --accent: #E68A58;   /* Sunsets Through Windows — grade 6 */
+  --accent-2: #4482A3; /* Jarred Deep Sea — grade 7 */
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--paper);
+  font-family: 'Rokkitt', Georgia, serif;
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+main { max-width: 64rem; margin: 0 auto; padding: 2rem 1.75rem 6rem; }
+
+a { color: inherit; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+a:hover { color: var(--accent); }
+
+/* Small letterspaced labels. The only job the label face has. */
+.eyebrow {
+  font-family: var(--font-label), 'Rokkitt', serif;
+  font-size: .69rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+/* --- masthead ----------------------------------------------------------- */
+.masthead { padding-bottom: 3.5rem; }
+
+.slug {
+  display: flex; justify-content: space-between; gap: 1rem;
+  padding-bottom: .8rem; border-bottom: 1px solid var(--hair); margin-bottom: 2.75rem;
+}
+
+/* The wordmark is meant to fill the measure and stop. The cap has to be in rem,
+   not vw: the container stops growing at 64rem and the viewport doesn't, so a
+   pure vw size runs off the right edge on any wide screen. */
+.wordmark {
+  font-family: var(--font-display), 'Rokkitt', sans-serif;
+  font-size: clamp(2.75rem, 13.8vw, 9.3rem);
+  line-height: .85;
+  letter-spacing: -.015em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Lede left, claims right — asymmetric on purpose. A centred block of three
+   equal columns is what every generated page does. */
+.intro {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 3.5rem; align-items: start; margin-top: 2.75rem;
+}
+@media (max-width: 48rem) { .intro { grid-template-columns: 1fr; gap: 2.25rem; } }
+
+.lede { font-size: 1.32rem; line-height: 1.45; margin: 0; max-width: 33rem; }
+/* Emphasis by colour and weight, not by slant. Rokkitt's italic is a slanted
+   roman rather than a drawn italic, and at this size it reads as cheap. */
+.lede em { font-style: normal; font-weight: 700; color: var(--accent); }
+
+.claims { list-style: none; margin: .35rem 0 0; padding: 0; }
+.claims li {
+  padding: .62rem 0; border-top: 1px solid var(--hair);
+  font-size: .93rem; color: var(--mute);
+}
+.claims li:first-child { border-top: 0; padding-top: 0; }
+
+/* --- shows -------------------------------------------------------------- */
+.shows {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3.5rem;
+  padding-top: 3.5rem; border-top: 1px solid var(--hair);
+}
+@media (max-width: 48rem) { .shows { grid-template-columns: 1fr; gap: 3rem; } }
+
+.show { --accent: var(--tint, #E68A58); }
+
+/* No frame. The cover's own black is the page's black, so the image ends
+   where its content ends rather than where a border says it does. */
+.show img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+
+.show h2 {
+  font-family: 'Rokkitt', serif; font-weight: 900;
+  font-size: 1.5rem; letter-spacing: .01em; text-transform: uppercase;
+  margin: 1.5rem 0 .3rem; line-height: 1;
+}
+.show .meta { display: block; margin-bottom: 1.35rem; }
+
+.eps {
+  list-style: none; margin: 0; padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+.eps li {
+  display: grid; grid-template-columns: 1.9rem 1fr auto;
+  gap: .75rem; align-items: baseline;
+  padding: .58rem 0; border-top: 1px solid var(--hair);
+  font-size: .97rem;
+}
+.eps .n { color: var(--accent); font-size: .8rem; }
+.eps .d { color: var(--faint); font-size: .85rem; }
+
+.soon {
+  margin: 0; padding: .58rem 0; border-top: 1px solid var(--hair);
+  color: var(--faint); font-size: .97rem;
+}
+
+.subscribe {
+  display: inline-block; margin-top: 1.35rem;
+  font-family: var(--font-label), 'Rokkitt', serif;
+  font-size: .72rem; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--accent); text-decoration: none;
+  padding-bottom: .3rem; border-bottom: 1px solid currentColor;
+}
+.subscribe:hover { color: var(--paper); }
+
+/* --- sections ----------------------------------------------------------- */
+section.band { margin-top: 5rem; padding-top: 3.5rem; border-top: 1px solid var(--hair); }
+
+.band > h3 {
+  font-family: 'Rokkitt', serif; font-weight: 900;
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
+  letter-spacing: .02em; text-transform: uppercase;
+  margin: 0 0 2.25rem; line-height: 1;
+}
+.band > h3 .qualifier {
+  display: block; font-weight: 400; text-transform: none; letter-spacing: 0;
+  font-size: .95rem; color: var(--mute); margin-top: .5rem;
+}
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5rem; }
+@media (max-width: 48rem) { .steps { grid-template-columns: 1fr; gap: 2rem; } }
+.step .num { display: block; color: var(--accent); margin-bottom: .8rem; }
+.step h4 { font-size: 1.05rem; font-weight: 700; margin: 0 0 .45rem; }
+.step p { margin: 0; color: var(--mute); font-size: .95rem; }
+
+/* The week as a schedule strip — rows, not cards. This is a daily programme;
+   a printed listing is the honest form for it. */
+.days { border-top: 1px solid var(--hair); }
+.day {
+  display: grid; grid-template-columns: 4.5rem 13rem 1fr;
+  gap: 1.5rem; align-items: baseline;
+  padding: 1rem 0; border-bottom: 1px solid var(--hair);
+}
+@media (max-width: 44rem) {
+  .day { grid-template-columns: 4.5rem 1fr; gap: .4rem 1.5rem; }
+  .day p { grid-column: 2; }
+}
+.day strong { font-weight: 700; font-size: 1.02rem; }
+.day p { margin: 0; color: var(--mute); font-size: .93rem; }
+
+/* --- footer ------------------------------------------------------------- */
+footer {
+  margin-top: 5rem; padding-top: 1.1rem; border-top: 1px solid var(--hair);
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+}
+
+/* --- admin -------------------------------------------------------------- */
+.admin h1 {
+  font-family: var(--font-display), 'Rokkitt', sans-serif;
+  text-transform: uppercase; letter-spacing: -.01em;
+  font-size: clamp(2.4rem, 8vw, 4rem); margin: 0; line-height: .9;
+}
+.admin header p { margin: .9rem 0 3rem; color: var(--mute); }
+
+label { display: block; margin-bottom: 1.5rem; }
+label > span {
+  display: block; margin-bottom: .5rem;
+  font-family: var(--font-label), 'Rokkitt', serif;
+  font-size: .69rem; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--mute);
+}
+small { display: block; font-size: .85rem; color: var(--faint); margin-top: .4rem; }
+
+input, textarea {
+  width: 100%; background: transparent; color: var(--paper);
+  border: 0; border-bottom: 1px solid var(--hair);
+  padding: .55rem 0; font: inherit; font-size: 1rem; resize: vertical;
+}
+textarea { border: 1px solid var(--hair); padding: .7rem .8rem; }
+input:focus, textarea:focus { outline: 0; border-color: var(--accent); }
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+@media (max-width: 34rem) { .row { grid-template-columns: 1fr; gap: 1rem; } }
+
+button {
+  background: var(--paper); color: var(--ground); border: 0;
+  padding: .75rem 1.6rem; cursor: pointer;
+  font-family: var(--font-label), 'Rokkitt', serif;
+  font-size: .78rem; letter-spacing: .16em; text-transform: uppercase;
+}
+button:hover { background: var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+
+.err { color: var(--accent); font-weight: 700; }
+.ok  { color: var(--paper); font-weight: 700; }
+.link {
+  background: none; border: 0; padding: 0; color: var(--mute);
+  font: inherit; font-size: .9rem; text-decoration: underline; cursor: pointer;
+  letter-spacing: 0; text-transform: none;
+}
+.link:hover { background: none; color: var(--accent); }
