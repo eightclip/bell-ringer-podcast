@@ -193,7 +193,8 @@ cover gets.
 ## Licence
 
 MIT — see [LICENSE](LICENSE). The code is yours to do anything with; the name
-"Bell Ringer" isn't included, so please ship your version under your own.
+"Bell Ringer" isn't included, so please ship your version under your own. Font
+and trademark notes are in [NOTICE](NOTICE).
 
 Bundled fonts are SIL Open Font License 1.1, with the licence text alongside
 them. No music and no photography are bundled — see
