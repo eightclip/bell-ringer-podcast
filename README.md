@@ -158,15 +158,29 @@ including where it is weaker than it looks. The two things that matter most:
 This repository contains no personal data, no real curriculum, and no
 credentials. The example plan is invented.
 
-## A note on what this is
+## Who made this, and why
 
-This is a personal project I run for my own family, opened up because the
-interesting parts — the source allowlist, claim-level verification, writing for
-a synthetic voice rather than for the page — seemed worth sharing. Issues and
-pull requests are welcome and may sit for a while. It is not a product and
-there is no support.
+I'm [John](https://github.com/eightclip). I built this for my own two kids,
+because the drive to school was fifteen dead minutes that happened five times a
+week, and no general kids' podcast was ever going to be about the Main Lesson
+block one of them was three weeks into.
 
-If you build something with it, I would genuinely like to hear about it.
+It's open here because the interesting parts turned out to be general: the
+source allowlist, claim-level verification, and writing for a synthetic voice
+rather than for the page. That last one is the part nobody warns you about —
+paragraph breaks are load-bearing, an em dash is inaudible, and a full stop is
+the only reliable beat you have.
+
+The show my kids actually listen to stays private, and their names appear
+nowhere in this repository by design.
+
+**This is a personal project, not a product.** Issues and pull requests are
+welcome and may sit for a while. There's no support. If you build something
+with it, I'd genuinely like to hear about it.
+
+Other things I've made: [DeadMD](https://deadmd.jmj.fyi) ·
+[Vaporware](https://company.jmj.fyi) · [Throw In The Towel](https://titt.jmj.fyi) ·
+[Build Your Game](https://buildgames.jmj.fyi)
 
 ## Credits
 
