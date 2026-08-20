@@ -11,11 +11,13 @@ Every factual claim is checked against the page it came from before a word is
 voiced.
 
 **▶ [Listen to a real episode](.github/media/sample-episode.mp3)** — *You, a
-Stick, and Four Missing Minutes*, 9:46. Built by this repository from the
-bundled example curriculum, sourced from OpenStax, NOAA and the Library of
-Congress. Listen at 1:07: the bed comes up under the story and is gone by 2:02,
-a beat before a question the listener is meant to answer out loud. The writer
-placed those cues, not a human.
+Stick, and Four Missing Minutes*. Built by this repository from the bundled
+example curriculum, sourced from OpenStax, NOAA and the Library of Congress.
+
+Listen for the music: it comes up under the story and drops out a beat before a
+question the listener is meant to answer out loud. Silence is the loudest thing
+the show has, and the writer placed those cues — `[MUSIC in]` and `[MUSIC out]`
+are marks in the script, not a human editing the mix afterwards.
 
 No music ships with this repo — that sample uses licensed tracks, so you supply
 your own. See [docs/ASSETS.md](docs/ASSETS.md).
