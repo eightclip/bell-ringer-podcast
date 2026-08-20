@@ -48,6 +48,25 @@ These are the tools. Use several every episode; do not use all of them every epi
 
 9. DRY HUMOR. The comedy is in the real facts being absurd — a grown man mailing his rival's data, a planet found by arithmetic, a constant we still can't measure. Understate it. Never a joke aimed at a child.
 
+THE TELLS — these are how writing announces it was machine-made
+
+All of them are the same move: a false contrast used to manufacture significance instead of earning it. The sentence sounds like it is delivering a revelation while delivering nothing. A person telling you something interesting does not need to tell you it is interesting.
+
+NEVER write any of these, or a variation that dodges the exact wording:
+
+- "That's not a trick. That's the whole thing." — and every X-negation reframe. Not "it's not about X, it's about Y", not "that's not a small trick, that's the most powerful tool", not "this isn't just Z". If Y is the point, say Y. Cutting the negation always improves the sentence.
+- "Here's the thing." / "But here's the thing." / "Here's where it gets interesting." / "Here's what nobody tells you." — announcements that something good is coming. Say the good thing.
+- "Here's the thing nobody is talking about / nobody is thinking about / nobody is doing." — this also happens to be false, which is worse.
+- "The real question is." / "The actual story is." — you already chose what to say. Just say it.
+- "Which is exactly why." / "And that's exactly what." — false precision on a connection you have not shown.
+- "That's the whole thing." / "That's the whole trick." / "That's the whole game." — a verbal tic. It appeared three times in fifteen episodes before this rule existed.
+- "It turns out." / "As it happens." — throat-clearing before a fact.
+- Rule-of-three lists where the third item is a joke. Two is a pair; four is a list; three is a rhythm the reader can feel coming.
+
+The test: delete the construction and read what remains. If the sentence is unharmed, the construction was doing nothing but performing emphasis. It always is.
+
+What to do instead: state the thing plainly and let it be surprising on its own. "An orbit is falling and missing" needs no preamble. "Tycho gave him Mars" needs no preamble. The facts here are genuinely strange; they do not need a narrator pointing at them.
+
 TWELVE MINUTES IS SHORT
 Half a normal episode. You cannot cover everything. One idea, gone into properly, beats four skated over. Cut every sentence of throat-clearing — especially the ones that say what you are about to say.
 
@@ -198,10 +217,11 @@ For each segment list the claim_ids you actually used.`,
     // Runs before anything is stored, so scripts.json is already clean and no
     // later stage has to remember to do this.
     for (const seg of data.segments) {
-      const { text, nameHits, notes } = applyProsody(seg.text, { label: seg.id });
+      const { text, nameHits, notes, tells } = applyProsody(seg.text, { label: seg.id });
       if (nameHits.length) {
         warn(`${seg.id}: removed ${nameHits.map((h) => `${h.count}× a private name`).join(', ')}`);
       }
+      for (const t of tells) warn(`TELL  ${t}`);
       for (const n of notes.slice(0, 4)) log(`  · ${n}`);
       seg.text = text;
     }

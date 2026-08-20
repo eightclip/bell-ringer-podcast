@@ -3,10 +3,9 @@
 // Two jobs, deliberately in one gate so neither can be skipped.
 //
 // 1. NAMES. No child's name goes into a script, a filename, or a feed. The
-//    writer is told not to use them, but "told not to" is not a control. In
-//    the show this came from, two episodes shipped opening with a child's name
-//    before anyone noticed, because the instruction was guidance and nothing
-//    checked it. This checks it.
+//    writer is told not to use them, but "told not to" is not a control — the
+//    week of 2026-08-17 shipped two episodes that opened with a name because
+//    the instruction was guidance and nothing checked it. This checks it.
 //
 //    The names themselves live in .env (PRIVATE_NAMES), never in the repo, so
 //    the guard can be public while the thing it guards against is not.
@@ -156,12 +155,55 @@ export function lintProsody(text, { label = '' } = {}) {
   return notes;
 }
 
+
+// --- machine tells -------------------------------------------------------
+// Constructions that announce the writing was generated. They are all one
+// move: a false contrast used to manufacture significance instead of earning
+// it — the sentence sounds like it is delivering a revelation while delivering
+// nothing.
+//
+// Reported, never rewritten. Mechanically deleting a clause mid-sentence
+// produces worse prose than the tic did; this is a flag for a human or for the
+// writer on a re-run. The brief in script.mjs forbids them, but "told not to"
+// is not a control — nine of these shipped across the first fifteen episodes,
+// and "that's the whole trick" alone appeared three times.
+const TELLS = [
+  [/\bthat'?s not (a|an|the|just)\b[^.!?]{0,50}[.!?]\s+(that'?s|it'?s)\b/i, 'X-negation reframe ("that\'s not a trick. that\'s...")'],
+  [/\bit'?s not (just )?(about )?\b[^.!?]{0,40}[.!?]\s+it'?s\b/i, '"it\'s not X. it\'s Y."'],
+  [/\bhere'?s (the thing|what|where|why)\b/i, '"here\'s the thing/what/where"'],
+  [/\bnobody (is )?(talk|think|tell|do|say)\w*\b/i, '"nobody is talking/thinking about"'],
+  [/\bthe (real|actual) (question|answer|story|point|reason)\b/i, '"the real question/story is"'],
+  [/\bwhich is exactly (why|what|how)\b/i, '"which is exactly why"'],
+  [/\bthat'?s the whole (thing|trick|point|game|ballgame)\b/i, '"that\'s the whole thing/trick"'],
+  [/\b(it turns out|as it happens)\b/i, '"it turns out" (throat-clearing)'],
+  [/\bwhat (most people|everyone) (gets? wrong|misses|doesn'?t)\b/i, '"what everyone gets wrong"'],
+  [/\bisn'?t just (about )?\b/i, '"isn\'t just about"'],
+];
+
+export function lintTells(text, { label = '' } = {}) {
+  const at = label ? `${label}: ` : '';
+  const out = [];
+  for (const [re, name] of TELLS) {
+    const m = text.match(re);
+    if (m) {
+      const i = text.indexOf(m[0]);
+      out.push(`${at}${name} — "${text.slice(i, i + 62).replace(/\n/g, ' ')}…"`);
+    }
+  }
+  return out;
+}
+
 // --- the gate -------------------------------------------------------------
 
 export function applyProsody(text, { label = '' } = {}) {
   const { text: named, hits } = scrubNames(text);
   const out = normalizeForSpeech(named);
-  return { text: out, nameHits: hits, notes: lintProsody(out, { label }) };
+  return {
+    text: out,
+    nameHits: hits,
+    notes: lintProsody(out, { label }),
+    tells: lintTells(out, { label }),
+  };
 }
 
 // --- CLI ------------------------------------------------------------------
@@ -177,19 +219,24 @@ if (isMain(import.meta.url)) {
   if (!doc) { console.error(`No scripts.json at ${file}`); process.exit(1); }
 
   let changed = 0, names = 0;
-  const allNotes = [];
+  const allNotes = [], allTells = [];
   for (const ep of doc.episodes) {
     for (const seg of ep.segments) {
-      const { text, nameHits, notes } = applyProsody(seg.text, { label: `part${ep.arc.part}/${seg.id}` });
+      const { text, nameHits, notes, tells } = applyProsody(seg.text, { label: `part${ep.arc.part}/${seg.id}` });
       if (nameHits.length) { names += nameHits.reduce((n, h) => n + h.count, 0); }
       if (text !== seg.text) { seg.text = text; changed++; }
       allNotes.push(...notes);
+      allTells.push(...tells);
     }
   }
 
   doc.prosody_applied_at = new Date().toISOString();
   writeJSON(file, doc);
   ok(`${changed} segment(s) rewritten, ${names} private name(s) removed`);
+  if (allTells.length) {
+    warn(`${allTells.length} machine tell(s) — these need a rewrite, not a regex:`);
+    for (const t of allTells) console.log(`   ✗ ${t}`);
+  }
   if (allNotes.length) {
     warn(`${allNotes.length} thing(s) only a rewrite can fix:`);
     for (const n of allNotes.slice(0, 15)) console.log(`   · ${n}`);
