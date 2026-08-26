@@ -217,7 +217,8 @@ For each segment list the claim_ids you actually used.`,
     // Runs before anything is stored, so scripts.json is already clean and no
     // later stage has to remember to do this.
     for (const seg of data.segments) {
-      const { text, nameHits, notes, tells } = applyProsody(seg.text, { label: seg.id });
+      const { text, nameHits, notes, tells } =
+        applyProsody(seg.text, { label: seg.id, term: show.listener?.term });
       if (nameHits.length) {
         warn(`${seg.id}: removed ${nameHits.map((h) => `${h.count}× a private name`).join(', ')}`);
       }

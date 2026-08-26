@@ -25,13 +25,23 @@ export function privateNames() {
     .split(',').map((n) => n.trim()).filter(Boolean);
 }
 
-const LISTENER_TERM = () => process.env.LISTENER_TERM || 'kiddo';
+// What a removed name is replaced with. This has to agree with the term the
+// writer was told it could use — `SHOWS.<id>.listener.term` in config/show.mjs
+// — or the two disagree in the same sentence and the show calls the listener
+// something nobody chose. It arrives from the caller for that reason; the env
+// var is a standalone escape hatch for running this gate over an old
+// scripts.json with no show in hand, and 'kiddo' is the last resort.
+//
+// An empty string is a real answer, not a missing one: a show configured with
+// `term: ''` wants no term of address, so a name is removed and nothing takes
+// its place. Hence `??` rather than `||`.
+const LISTENER_TERM = (term) => term ?? process.env.LISTENER_TERM ?? 'kiddo';
 
 // Vocatives are the common case and each needs different punctuation repair:
 // "Sam. The station" wants the sentence to start at "The", while
 // "Morning, Sam." wants the comma to go with it. Handle the shapes, then
 // fall back to a plain swap for anything left.
-export function scrubNames(text, names = privateNames()) {
+export function scrubNames(text, names = privateNames(), term = undefined) {
   if (!names.length) return { text, hits: [] };
   const hits = [];
   let out = text;
@@ -50,7 +60,7 @@ export function scrubNames(text, names = privateNames()) {
       // dashed aside: "And Sam — the station"
       .replace(new RegExp(`\\b${n}\\s*—\\s*`, 'gi'), '')
       // anything left becomes a term of address
-      .replace(new RegExp(`\\b${n}\\b`, 'gi'), LISTENER_TERM());
+      .replace(new RegExp(`\\b${n}\\b`, 'gi'), LISTENER_TERM(term));
   }
 
   // Repair what removal left behind.
@@ -195,8 +205,8 @@ export function lintTells(text, { label = '' } = {}) {
 
 // --- the gate -------------------------------------------------------------
 
-export function applyProsody(text, { label = '' } = {}) {
-  const { text: named, hits } = scrubNames(text);
+export function applyProsody(text, { label = '', term = undefined } = {}) {
+  const { text: named, hits } = scrubNames(text, privateNames(), term);
   const out = normalizeForSpeech(named);
   return {
     text: out,
