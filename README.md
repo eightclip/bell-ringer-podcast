@@ -96,6 +96,21 @@ that have aired. Friday's quiz can't be spoiled on Monday.
 - Node 20+, `ffmpeg`, and an [Anthropic API key](https://console.anthropic.com)
 - An [OpenAI API key](https://platform.openai.com) for text-to-speech
 
+The Anthropic key is not a swappable default. The source allowlist above is
+enforced by Anthropic's server-side `web_search` and `web_fetch` — the model
+never receives a URL it is allowed to open outside `config/sources.mjs`, which
+is what makes it a wall rather than a filter. The research stage also leans on
+that API's paused-turn resumption and prompt-cache breakpoints, which are most
+of why a week of research costs dollars instead of tens of dollars.
+
+Porting research to another provider means writing the fetch loop and enforcing
+the allowlist yourself, in this repo, and you should assume that is a weaker
+guarantee until you have tested it. `pipeline/script.mjs` is a different story —
+it only wants JSON back and would move with little work.
+
+Text-to-speech is genuinely swappable, and voice is the cheapest stage either
+way. See the `VOICE_MODE` table in [docs/SETUP.md](docs/SETUP.md).
+
 **Optional**
 
 - ImageMagick — episode artwork; without it you get audio and no covers

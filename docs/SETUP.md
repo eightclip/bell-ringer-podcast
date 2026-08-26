@@ -98,6 +98,29 @@ Fill in the `R2_*` values in `.env`. Locally the pipeline can shell out to
 `wrangler` using your OAuth login, so `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`
 are optional — but GitHub Actions and Vercel both need real S3 keys.
 
+**The paste-in page needs all seven of these in Vercel**, Production scope, all
+marked Sensitive:
+
+```
+R2_ACCOUNT_ID  R2_BUCKET  R2_PUBLIC_BASE
+R2_ACCESS_KEY_ID  R2_SECRET_ACCESS_KEY
+FEED_TOKEN  INGEST_PASSWORD
+```
+
+Worth doing carefully, because getting it wrong fails in the most annoying way
+available: `/admin` renders, accepts your week, and cannot save it. Miss the two
+S3 keys specifically and `/api/week` answers `missing R2 credentials` — which
+you only see if you look. Check it before you rely on it:
+
+```bash
+curl -s https://<your-site>/api/week | grep storage    # want "storage":"ready"
+```
+
+Leave Vercel's Development scope empty. `npm run dev` is `next dev` and reads
+your local `.env`, so anything you put there is never read — it is just a second
+readable copy of live secrets. Environment changes need a redeploy
+(`cd site && vercel --prod --yes`) if the project has no git integration.
+
 **Bind a custom domain to the bucket before you subscribe anyone.** The
 `r2.dev` endpoint is rate-limited, and a feed URL is expensive to change once
 apps have it.
