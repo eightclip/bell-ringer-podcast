@@ -1,7 +1,7 @@
 {
   "show": "grade6",
   "source": "EXAMPLE DATA \u2014 invented for the demo. Replace with your own.",
-  "note": "This is not a real curriculum. It exists so `npm run demo` produces a real episode on a fresh clone. Generate your own with `npm run planimport`, or hand-write this shape.",
+  "note": "This is not a real curriculum. It exists so `npm run demo` produces a real episode on a fresh clone. Put your own block plan at plans/<show>-blocks.json and run `npm run plan <show>` to expand it into this shape, or hand-write it.",
   "school_year": "2026-2027",
   "generated_at": "2026-08-18T00:00:00.000Z",
   "weeks": [
