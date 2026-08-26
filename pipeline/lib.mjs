@@ -128,30 +128,55 @@ export function fmtDuration(seconds) {
     : `${m}:${String(r).padStart(2, '0')}`;
 }
 
+// Sorted, deliberately. The pool's order decides which track a week gets, so it
+// has to be the same order everywhere: readdirSync returns directory order,
+// which is usually alphabetical on a Mac and is not promised to be, and is a
+// different filesystem again on a CI runner. Unsorted, the same week rendered
+// in two places quietly gets different music.
 export function listMusic(kind) {
   const dir = join(MUSIC, kind);
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((f) => /\.(mp3|wav|m4a|aac|flac)$/i.test(f))
+    .sort()
     .map((f) => join(dir, f));
 }
 
-// Deterministic-but-varied pick: same week always picks the same track (so a
-// re-render is reproducible), but consecutive weeks don't repeat.
+// How many weeks since a fixed Monday. The epoch is arbitrary and only has to
+// never move; it exists so the rotation below has an ordinal to walk.
+const WEEK_ZERO = Date.UTC(2026, 0, 5);   // Monday 2026-01-05
+const weekOrdinal = (week) =>
+  Math.floor((Date.parse(`${week}T00:00:00Z`) - WEEK_ZERO) / (7 * 86400 * 1000));
+
+// Deterministic and non-repeating: the same week always picks the same track,
+// and consecutive weeks always pick different ones.
+//
+// This used to hash the week string modulo the pool size, which gave the first
+// property and only approximated the second — with six themes, two weeks
+// running had a one-in-six chance of drawing the same one. The `history`
+// argument that was supposed to prevent that was never passed by any caller:
+// dead parameter, live bug.
+//
+// Storing what was used is the obvious fix and the wrong one, because weeks
+// render on an ephemeral CI runner and a ledger on disk does not survive to the
+// next render. Walking an ordinal needs no state at all — week N takes slot N,
+// N+1 takes N+1, and a repeat is impossible until the pool wraps.
+//
+// `salt` offsets the walk so the theme, the bed and each episode's sting are on
+// independent rotations instead of moving in lockstep.
 //
 // Stings fall back to the theme pool. A sting is a fifteen-second button and
 // the mixer already trims and fades whatever it is handed, so a library of
 // full-length tracks can supply one — no reason to go silent at every break
 // just because nobody bought a cue package.
-export function pickTrack(kind, week, salt = 0, history = []) {
+export function pickTrack(kind, week, salt = 0) {
   let pool = listMusic(kind);
   if (!pool.length && kind === 'sting') pool = listMusic('theme');
   if (!pool.length) return null;
-  const fresh = pool.filter((p) => !history.includes(p));
-  const from = fresh.length ? fresh : pool;
-  let h = salt;
-  for (const c of week) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return from[h % from.length];
+  // Positive modulo: a week before the epoch gives a negative ordinal, and
+  // JavaScript's % keeps the sign, which would index off the front of the pool.
+  const n = weekOrdinal(week) + salt;
+  return pool[((n % pool.length) + pool.length) % pool.length];
 }
 
 // --- text -----------------------------------------------------------------

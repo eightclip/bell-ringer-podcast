@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { askJSON, costOf } from './claude.mjs';
 import { getShow, WEEK_ARC, SEGMENTS, wordBudget, VOICE_MODE, VOICE_MODES, pronounsFor, BRAND } from '../config/show.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, step, ok, warn, log, countWords, isMain } from './lib.mjs';
-import { applyProsody } from './prosody.mjs';
+import { applyProsody, musicCues } from './prosody.mjs';
 
 const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
 
@@ -225,6 +225,31 @@ For each segment list the claim_ids you actually used.`,
       for (const t of tells) warn(`TELL  ${t}`);
       for (const n of notes.slice(0, 4)) log(`  · ${n}`);
       seg.text = text;
+    }
+
+    // --- music gate: did the writer actually place any? -------------------
+    // The acts carry `music: null`, so a bed plays there only if the script
+    // asked for one. Nothing downstream notices when it didn't: assemble sets
+    // `wantsBed` from the cue count, so zero cues is a silent, correct-looking
+    // eleven minutes of dry voice — an episode that sounds finished and is not.
+    //
+    // The brief tells the writer to place cues. As with names, "told to" is not
+    // a control, so something checks it.
+    //
+    // Warned, not enforced. A retry costs a full script generation, and a
+    // missing bed under one act is worth knowing about, not worth a rewrite of
+    // prose that may otherwise be good.
+    for (const seg of data.segments) {
+      const spec = SPOKEN.find((s) => s.id === seg.id);
+      // Segments the config gives no music and that are long enough to want
+      // some — the acts today, and anything act-shaped added later. The cold
+      // open is also `music: null` and is twenty seconds; it is not this.
+      if (!spec || spec.music !== null || spec.seconds < 120) continue;
+      const { good, bad } = musicCues(seg.text);
+      for (const b of bad) {
+        warn(`${seg.id}: malformed music cue ${b} — voice.mjs will drop it silently`);
+      }
+      if (!good.length) warn(`${seg.id}: no music cues — this act will play dry`);
     }
 
     // --- fact gate: did the writer cite anything that doesn't exist? ------

@@ -147,6 +147,19 @@ Two workflows, both needing repository secrets:
 Push `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HUME_*`, `UNSPLASH_ACCESS_KEY`,
 `R2_*`, and `FEED_TOKEN` as Actions secrets.
 
+**Your music does not reach the runner, and nothing tells you.** `*.mp3` is
+gitignored — it has to be, because music licences almost never cover
+redistribution from a repo — so a CI checkout has none even when your laptop is
+full of it, and `render.yml` has no step that fetches any. Every scheduled week
+then mixes with no theme, no stings and no beds, warns about it in a log nobody
+reads, and publishes green, while the weeks you render by hand come out fine.
+
+If you want automated weeks to have music, give the runner the tracks before
+the render — private object storage, or an asset on a release of a **private**
+repo, fetched in a step ahead of `Render`. Do not stage them anywhere public:
+the audio bucket is world-readable, so a key in it is somebody's licensed music
+published to the internet.
+
 **Both workflows are skipped until you opt in.** Add a repository *variable*
 (Settings → Secrets and variables → Actions → Variables) named
 `BELL_RINGER_ENABLED` set to `true`. Until then a fork never calls a paid API

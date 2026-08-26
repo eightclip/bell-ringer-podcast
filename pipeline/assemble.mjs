@@ -217,10 +217,27 @@ export async function assembleWeek(showId, week) {
   const scripts = readJSON(join(dir, 'scripts.json'));
   if (!voice) throw new Error(`No voice.json for ${showId} ${week} — run: npm run voice ${showId} ${week}`);
 
+  // Deliberately still a warning rather than a failure. On a fresh clone with
+  // no tracks yet this is the correct outcome: the timing stays right, the
+  // episode is listenable, and the message says what to do.
+  //
+  // But it is also the shape of a real bug, and the third line is there because
+  // that bug is easy to ship and impossible to see. `*.mp3` is gitignored — it
+  // has to be, since music licences almost never cover redistribution from a
+  // repo — so a CI checkout has no music even when your laptop is full of it.
+  // Nothing in render.yml fetches any. So every scheduled render mixes with no
+  // theme, no stings and no beds, says so in a log nobody reads, and publishes
+  // green, while the weeks you render by hand come out fine. If you automate
+  // this, give the runner the tracks: private object storage or a private
+  // release asset, fetched before the render.
   const haveMusic = ['theme', 'sting', 'bed'].some((k) => listMusic(k).length);
   if (!haveMusic) {
     warn(`no music in ${MUSIC}/{theme,sting,bed} — rendering with silent breaks so timing stays correct`);
     warn(`drop tracks in those folders and re-run assemble; nothing else needs to change`);
+    if (process.env.CI) {
+      warn(`this is CI and *.mp3 is gitignored, so the checkout has none — if this run is`);
+      warn(`meant to produce music, something has to fetch it before the render`);
+    }
   }
 
   const outDir = join(dir, 'episodes');

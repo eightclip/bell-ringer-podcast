@@ -32,7 +32,14 @@ export function chunk(text) {
     if (pause) { parts.push({ kind: 'silence', seconds: Number(pause[1]) }); continue; }
     const cue = piece.match(/^\[MUSIC\s+(in|out|swell)\b[^\]]*\]$/i);
     if (cue) { parts.push({ kind: 'cue', action: cue[1].toLowerCase() }); continue; }
-    if (/^\[MUSIC/i.test(piece)) continue;   // malformed cue: drop it, don't speak it
+    // Malformed cue: drop it rather than speak it — but say so. Dropping was
+    // always right (nobody wants "bracket music up" read aloud); doing it
+    // silently was not. The writer asked for music, the bed never arrives, and
+    // the only evidence is an act that sounds dry.
+    if (/^\[MUSIC/i.test(piece)) {
+      warn(`dropped a malformed music cue ${piece.trim()} — only [MUSIC in|out|swell] is understood`);
+      continue;
+    }
     // Last line of defence. script.mjs already scrubbed this, but a scripts.json
     // written before that gate existed would otherwise be voiced as-is — which
     // is exactly how a name reached two published episodes. Cheap, and it makes
