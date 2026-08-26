@@ -7,14 +7,17 @@ node_modules/
 .env.*
 !.env.example
 
-# Build output: audio, artwork, manifests. Large, regenerable, and specific to
-# one family's week. The JSON stages are un-ignored below because they are the
-# cheap, reviewable record of what the model researched and wrote.
+# Build output: audio, artwork, manifests, and the JSON stages. Large,
+# regenerable, and specific to one family's week.
+#
+# This used to carry `!build/*/*/scripts.json` and three siblings, on the theory
+# that the JSON stages are a cheap reviewable record of what the model wrote.
+# They never worked — git cannot re-include a file whose parent directory is
+# excluded, so `build/` won every time. Removed rather than repaired, because
+# repairing them is the wrong direction: scripts.json is the episode text
+# written for one named child, and a rule that quietly makes it committable is
+# a rule that eventually commits it.
 build/
-!build/*/*/brief.json
-!build/*/*/research.json
-!build/*/*/scripts.json
-!build/*/*/sources.json
 
 # Media. Never commit music or audio you licensed — your licence almost
 # certainly does not cover redistribution from a public repo.

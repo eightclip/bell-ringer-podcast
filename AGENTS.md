@@ -28,6 +28,10 @@ Do not guess these. Ask, in one message, and wait:
    more and is the single thing that makes it sound like a family's show.
 6. **Do they want it published at all?** An unlisted feed serves the family that
    actually listens. See §5.
+7. **Which names must never be spoken?** The listener's, their friends', a
+   teacher's. Ask for the list, put it in `PRIVATE_NAMES` in `.env`, and do not
+   let this one slide to later — see §5 for why an empty list is not a safe
+   default.
 
 ## 2. Everything configurable, and where it lives
 
@@ -96,6 +100,14 @@ filename, a commit, or a show id. Shows are keyed by grade for this reason — t
 id ends up in the public feed URL and in every audio path. Put the names in
 `PRIVATE_NAMES` in `.env` and `pipeline/prosody.mjs` will strip them from any
 script and again at the voice stage. Treat a name reaching a script as a bug.
+
+**An empty `PRIVATE_NAMES` is not a safe default — it is no gate at all.** The
+scrubber is a list of strings to search for; given none it finds none and passes
+everything through, silently and with no warning. It ships empty because the
+repo cannot know the names, which means filling it in is a setup step somebody
+has to actually do. Do it before the first real render, not before the first
+publish: the check that matters runs when the script is written, and by publish
+time the name is already in `scripts.json`.
 
 **`SHOW_LISTED` stays `false` unless they explicitly say otherwise.** True asks
 Apple and every directory that mirrors it to index the show. Directories cache;
