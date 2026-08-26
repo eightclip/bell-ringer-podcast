@@ -190,6 +190,30 @@ const TELLS = [
   [/\bisn'?t just (about )?\b/i, '"isn\'t just about"'],
 ];
 
+// --- music cues -----------------------------------------------------------
+// The one cue shape voice.mjs will act on. It has to match the regex there
+// exactly, because anything that misses it is dropped silently: voice.mjs
+// strips any `[MUSIC…]` from the spoken text so it never gets read aloud, and a
+// malformed one therefore vanishes with no cue and no warning. That is the
+// worst of both — the writer asked for music and nothing says it did not happen.
+const MUSIC_CUE = /^\[MUSIC\s+(in|out|swell)\b[^\]]*\]$/i;
+
+/**
+ * The music cues in one segment, split into the ones that will work and the
+ * ones that will be thrown away.
+ *
+ * Counted rather than repaired. A cue in the wrong place is a writing problem,
+ * and guessing where a bed was meant to start is exactly the kind of helpful
+ * repair that produces music under the wrong sentence.
+ */
+export function musicCues(text) {
+  const all = (text.match(/\[[^\]]*\]/g) || []).filter((m) => /^\[MUSIC/i.test(m));
+  return {
+    good: all.filter((m) => MUSIC_CUE.test(m)),
+    bad: all.filter((m) => !MUSIC_CUE.test(m)),
+  };
+}
+
 export function lintTells(text, { label = '' } = {}) {
   const at = label ? `${label}: ` : '';
   const out = [];
