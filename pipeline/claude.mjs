@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { need, warn } from './lib.mjs';
+import { log, need, warn } from './lib.mjs';
 import { ALLOWED_DOMAINS } from '../config/sources.mjs';
 
 export const MODEL = 'claude-opus-5';
