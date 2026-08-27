@@ -19,8 +19,12 @@ Do not guess these. Ask, in one message, and wait:
    correct.
 2. **Who is the parent voice?** How should the brief describe them — "their own
    father", "their mum", "their uncle Ray"? Never spoken aloud.
-3. **One show or two?** One per child. Two children in one show means each sits
-   through half an episode about a subject they don't take.
+3. **How many children, and what grade is each in?** One show per child, one
+   roster line per show, and one show is a complete setup. Two children in one
+   show means each sits through half an episode about a subject they don't
+   take. Ask the grade for each — it is the only field you cannot derive, and
+   everything else follows from it. Any grade from kindergarten (0) to 12
+   works; this is not a middle-school tool.
 4. **Where do lesson plans come from?** A syllabus for the whole year, or an
    email each week? This decides `planFile` vs. the paste-in page.
 5. **Which voices?** Start at `full-stock` (one OpenAI key). Mention that
@@ -37,8 +41,9 @@ Do not guess these. Ask, in one message, and wait:
 
 | What | Where |
 |---|---|
-| Grade, age, **pronouns**, term of address | `config/show.mjs` → `SHOWS.<id>.listener` |
-| Show titles, taglines, descriptions | `config/show.mjs` → `SHOWS` |
+| Which children exist, and their grade | `config/show.mjs` → `ROSTER` |
+| **Pronouns**, term of address, accent, plan file | `config/show.mjs` → the roster entry |
+| Age, id, title, label, tagline, description | derived from the grade — do not hand-write these |
 | Brand name, author, site URL, `parentIs` | `.env` (read by `config/show.mjs` → `BRAND`) |
 | Voice mode and voice ids | `.env` → `VOICE_MODE`, `OPENAI_VOICE*`, `HUME_VOICE_*` |
 | Segment order, lengths, acting direction | `config/show.mjs` → `SEGMENTS` |
@@ -52,8 +57,28 @@ Pronouns are wired through `PRONOUNS` in `config/show.mjs`. Set
 `listener.pronouns` and every sentence in the brief agrees, verbs included.
 Never hand-edit pronouns into the brief text.
 
-**Adding a third show:** add a key to `SHOWS`, add its id to the `for show in`
-loop in `.github/workflows/feed.yml`, and give it a `planFile` or leave it null.
+**Adding or removing a show is one line of `ROSTER`.** Nothing else in the
+repository names a grade — the feed workflow asks the roster which shows exist,
+the demo takes the first, and `npm run week <id>` accepts any id the roster
+defines. Do not add a show by hand-writing a title or an id; `defineShow`
+derives both from the grade, and a hand-written "7th Grade" outlives the year
+the child was in it.
+
+**Ask whether this show will still exist next year, and set `id` if so.** The
+id is in the feed URL, every audio key and every manifest key, and it defaults
+to the grade. That default is right for one year and wrong for the second: bump
+`grade: 6` to `7` and the feed moves, so the subscriber's app keeps polling a
+URL that will never gain another episode and the back catalogue is stranded
+under the old id. Nothing errors. The show just stops arriving, and the first
+person to notice is a child in a car.
+
+Setting `id: 'blue'` — stable, meaningless, **never a name**, since it lands in
+a public URL — means the grade drives the title, the age and the brief while the
+plumbing holds still. Rolling a year forward is then incrementing each `grade`
+and re-running `npm run plan <show>`.
+
+This has to be decided before the first publish. Changing an id later costs the
+same as never having set one.
 
 ## 3. Order of operations
 

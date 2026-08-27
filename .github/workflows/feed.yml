@@ -48,6 +48,12 @@ jobs:
           R2_PUBLIC_BASE: ${{ secrets.R2_PUBLIC_BASE }}
           FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
         run: |
-          for show in grade6 grade7; do
+          # The roster decides which shows exist, not this file. Hardcoded, a
+          # show added to config/show.mjs got audio and a manifest and then no
+          # feed, which looks exactly like a broken upload from the outside.
+          shows=$(node -e "import('./config/show.mjs').then(m => console.log(m.showIds().join(' ')))")
+          echo "shows: $shows"
+          [ -n "$shows" ] || { echo "no shows on the roster"; exit 1; }
+          for show in $shows; do
             node pipeline/feed.mjs "$show" ${{ inputs.all && '--all' || '' }} || true
           done

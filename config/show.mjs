@@ -2,10 +2,16 @@ import './env.mjs';
 
 // Bell Ringer — show bible.
 //
-// Two shows, not one. Each kid gets his own feed, his own artwork, and his own
-// twelve-minute episode. The earlier design put both boys in one 24-minute
-// episode, which meant each of them sat through eight minutes about a subject
-// he isn't taking. Separate feeds halve the runtime and double the relevance.
+// One show per child, however many children there are. The earliest design put
+// two kids in one 24-minute episode, which meant each of them sat through eight
+// minutes about a subject he isn't taking. Separate feeds halve the runtime and
+// double the relevance, and the cost of a second show is a second line on the
+// roster below.
+//
+// A single show is a complete configuration — nothing here needs a second one,
+// and nothing caps it at two. Everything downstream reads the roster: the feed
+// workflow loops over it, the demo takes the first entry, and `npm run week`
+// accepts any id it defines.
 
 export const BRAND = {
   name: process.env.SHOW_BRAND_NAME || 'Bell Ringer',
@@ -65,52 +71,138 @@ export const pronounsFor = (showOrId) => {
   return PRONOUNS[show.listener?.pronouns] || PRONOUNS.they;
 };
 
+// --- the roster -----------------------------------------------------------
+// One entry per child. One is a complete configuration; there is nothing here
+// that needs a second, and nothing that stops you having five.
+//
+// A grade is the only thing you must supply. Everything a grade can imply —
+// the id, the title, the label, how old the listener is, the ordinal the
+// writer's brief uses — is derived below rather than typed out, because those
+// are the fields that go stale silently. Hand-written, "7th Grade" outlives the
+// year the child was in it, and the mismatch is invisible until somebody reads
+// a feed and finds a fourteen-year-old being addressed as twelve.
+//
+// So next September this list changes by one digit per child and the whole
+// pipeline follows: new ids, new feed paths, new age in the brief, new ordinal
+// in the description. Nothing else in the repository names a grade.
+//
 // Shows are keyed by grade, not by name. The id reaches the outside world — it
 // is in the feed URL, every audio path and every artwork filename — so a name
 // here would put a child's name on a public URL for no benefit. Nothing in
 // `listener` is ever spoken: the scripts address the listener as "you".
-export const SHOWS = {
-  grade6: {
-    id: 'grade6',
-    title: 'Bell Ringer — 6th Grade',
-    slug: 'grade6',
-    label: '6th Grade',
-    listener: {
-      grade: 6,
-      age: 'eleven or twelve',   // how the brief describes them
-      pronouns: 'they',          // 'he' | 'she' | 'they'
-      term: 'kiddo',             // rare direct address; '' for none
-    },
-    tagline: 'Sixth grade, on the way to school.',
-    description:
-      'A daily twelve-minute ride-to-school show built from what a sixth grader is ' +
-      'actually studying that week. Researched from museums, national labs, and ' +
-      'university sources — every fact traceable to a named page.',
+export const ROSTER = [
+  {
+    grade: 6,
+    pronouns: 'they',     // 'he' | 'she' | 'they'
+    term: 'kiddo',        // rare direct address; '' for none
+    accent: 'sunsets',    // a name from ART.overlays, below
     // A full-year block plan, so weeks come from a calendar rather than from
-    // someone remembering to paste an email.
+    // someone remembering to paste an email. null means paste each week in at
+    // /admin on your site instead.
     planFile: 'plans/example-year.json',
-    accent: 'sunsets',
   },
-  grade7: {
-    id: 'grade7',
-    title: 'Bell Ringer — 7th Grade',
-    slug: 'grade7',
-    label: '7th Grade',
-    listener: {
-      grade: 7,
-      age: 'twelve or thirteen',
-      pronouns: 'they',
-      term: 'kiddo',
-    },
-    tagline: 'Seventh grade, on the way to school.',
-    description:
-      'A daily twelve-minute ride-to-school show built from what a seventh grader is ' +
-      'actually studying that week. Researched from museums, national labs, and ' +
-      'university sources — every fact traceable to a named page.',
-    planFile: null, // no year plan: paste each week in at /admin on your site
+  {
+    grade: 7,
+    pronouns: 'they',
+    term: 'kiddo',
     accent: 'deepsea',
+    planFile: null,
   },
-};
+];
+
+// --- what a grade implies -------------------------------------------------
+// US convention: a child in grade G turns G+6 during that school year, so the
+// year is spent G+5 or G+6. Kindergarten is grade 0 and works the same way.
+// If your school system counts differently, override `age` on the roster entry
+// — every derived field below can be overridden that way.
+const NUMBER_WORD = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+  'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+  'seventeen', 'eighteen', 'nineteen',
+];
+const ORDINAL_WORD = [
+  'kindergarten', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth',
+  'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth',
+];
+
+// 1st, 2nd, 3rd, 4th… the suffix is irregular for 11-13, which is why this is
+// a function and not `n + 'th'`.
+export function ordinalSuffix(n) {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
+}
+
+const words = (n) => NUMBER_WORD[n] || String(n);
+
+export function gradeLabel(grade) {
+  return grade === 0 ? 'Kindergarten' : `${ordinalSuffix(grade)} Grade`;
+}
+
+// "sixth grader", "kindergartener" — how the brief and the description name the
+// listener in prose.
+export function gradeWord(grade) {
+  return ORDINAL_WORD[grade] || `grade ${grade}`;
+}
+
+export function defaultAge(grade) {
+  return `${words(grade + 5)} or ${words(grade + 6)}`;
+}
+
+// Fill in everything a grade implies, then let the roster entry override any
+// of it. Deriving first and spreading second is what makes the override work
+// without the defaults having to know which fields might be replaced.
+export function defineShow(entry) {
+  const { grade, id: fixedId, pronouns = 'they', term = 'kiddo', accent, planFile = null, ...rest } = entry;
+  if (!Number.isInteger(grade) || grade < 0 || grade > 12) {
+    throw new Error(`Roster entry needs an integer grade 0-12, got ${JSON.stringify(grade)}`);
+  }
+  // The id defaults to the grade, and that is the right default for one year.
+  // It is the wrong one for the second, and the bill arrives in September.
+  //
+  // The id is in the feed URL, every audio key and every manifest key. So
+  // incrementing a grade renames all three: the subscriber's app keeps polling
+  // a feed that will never gain another episode, and the back catalogue is
+  // stranded under the old id while the new one starts empty. Nothing errors.
+  // The show simply stops arriving, and the first person to notice is a child
+  // in a car.
+  //
+  // Setting `id` fixes it: a stable, meaningless handle that outlives the
+  // grade. Meaningless on purpose — it lands in a public URL, so it must not be
+  // a name. `blue`, `north`, `apollo`. The grade still drives the title, the
+  // age and the writer's brief; only the plumbing stops moving.
+  //
+  // Pick one before you publish. Changing it later has the same cost as not
+  // having had one.
+  const id = fixedId || (grade === 0 ? 'kindergarten' : `grade${grade}`);
+  if (!/^[a-z0-9-]+$/.test(id)) {
+    throw new Error(`Show id "${id}" must be lowercase letters, numbers and hyphens — it goes in a URL`);
+  }
+  const label = gradeLabel(grade);
+  const word = gradeWord(grade);
+  // "an eighth grader", "an eleventh grader". Spelling does not decide this —
+  // sound does, and only these two ordinals start with a vowel sound.
+  const article = ['eighth', 'eleventh'].includes(word) ? 'an' : 'a';
+  return {
+    id,
+    slug: id,
+    label,
+    title: `${BRAND.name} — ${label}`,
+    listener: { grade, age: defaultAge(grade), pronouns, term },
+    tagline: `${word.charAt(0).toUpperCase()}${word.slice(1)}${grade === 0 ? '' : ' grade'}, on the way to school.`,
+    description:
+      `A daily twelve-minute ride-to-school show built from what ${article} ${word} ` +
+      `${grade === 0 ? 'student' : 'grader'} is actually studying that week. Researched from ` +
+      'museums, national labs, and university sources — every fact traceable to a named page.',
+    planFile,
+    accent,
+    ...rest,
+  };
+}
+
+export const SHOWS = Object.fromEntries(
+  ROSTER.map(defineShow).map((show) => [show.id, show]),
+);
 
 export const showIds = () => Object.keys(SHOWS);
 

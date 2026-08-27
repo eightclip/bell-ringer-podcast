@@ -13,6 +13,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+// Safe to import up here: config/show.mjs reaches only for node builtins, so it
+// cannot be the thing that fails before the preflight has explained why.
+import { showIds, getShow } from '../config/show.mjs';
 
 // Only node builtins at module scope, on purpose. The pipeline modules pull in
 // @anthropic-ai/sdk and @aws-sdk, so importing them up here would make
@@ -22,8 +25,27 @@ import { execFileSync } from 'node:child_process';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const SHOW = 'grade6';
-const WEEK = '2026-09-07';   // first week of plans/example-year.json
+// Whatever is first on the roster, and whatever week that show's plan starts
+// on. Both were hardcoded to grade6 / 2026-09-07, which meant the demo — the
+// first command in the README — broke the moment somebody configured the repo
+// for their own child, which is the one thing this file exists to survive.
+// The first week the roster's first show has a plan for. Reading it beats
+// naming it: the bundled example plan can be replaced wholesale and the demo
+// still points at a week that exists.
+function firstPlannedWeek(showId) {
+  try {
+    const file = getShow(showId).planFile;
+    if (!file) return null;
+    const path = join(ROOT, file);
+    if (!existsSync(path)) return null;
+    return JSON.parse(readFileSync(path, 'utf8'))?.weeks?.[0]?.week || null;
+  } catch {
+    return null;   // the preflight below is where missing pieces get explained
+  }
+}
+
+const SHOW = showIds()[0];
+const WEEK = firstPlannedWeek(SHOW) || '2026-09-07';
 const PART = 1;
 
 // Measured on the reference show, not guessed: a five-episode week runs about

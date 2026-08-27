@@ -2,6 +2,9 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// config/show.mjs imports only config/env.mjs, which imports only node
+// builtins — so this is a one-way edge, not a cycle.
+import { showIds } from '../config/show.mjs';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -85,8 +88,26 @@ export function currentWeek() {
 
 // Which show a command is operating on. Every stage takes it as the first
 // non-flag, non-date argument: `node pipeline/run.mjs grade6 2026-08-17`.
-export function currentShow(known = ['grade6', 'grade7']) {
-  const arg = process.argv.slice(2).find((a) => known.includes(a.toLowerCase()));
+//
+// The known list comes from the roster rather than being written out here.
+// Hardcoded, it silently ignored any show that was not one of the original two:
+// `npm run week grade4` would parse no show argument at all and quietly render
+// the *first* show instead, which is the kind of wrong that looks like it
+// worked. With one show configured, the argument is optional and that one is
+// always the answer.
+export function currentShow(known = showIds()) {
+  const args = process.argv.slice(2).map((a) => a.toLowerCase());
+  const arg = args.find((a) => known.includes(a));
+  if (!arg) {
+    // A show-shaped argument that is not on the roster is almost always a
+    // grade nobody configured — the year rolled over, or it is a typo. Falling
+    // through to the first show renders a real week for the wrong child and
+    // looks like it worked, so say so rather than guessing quietly.
+    const looksLikeShow = args.find((a) => /^(grade\d{1,2}|kindergarten)$/.test(a));
+    if (looksLikeShow) {
+      warn(`"${looksLikeShow}" is not on the roster (${known.join(', ')}) — add it to ROSTER in config/show.mjs`);
+    }
+  }
   return (arg || process.env.SHOW || known[0]).toLowerCase();
 }
 
