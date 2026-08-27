@@ -89,6 +89,16 @@ it is not blocking.
 
 You need a Cloudflare R2 bucket and, for the paste-in page, a Vercel project.
 
+**`site/` is a separate npm project** — its own `package.json`, its own
+lockfile, its own dependencies (Next, React, the S3 client). `npm ci` at the
+root does not install it, and nothing in the pipeline needs it. Vercel installs
+it for you on deploy, so publishing works without this; you only need it to run
+the site locally:
+
+```bash
+cd site && npm install && npm run dev     # http://localhost:3000
+```
+
 ```bash
 openssl rand -hex 16     # FEED_TOKEN
 openssl rand -hex 16     # INGEST_PASSWORD
@@ -116,9 +126,9 @@ you only see if you look. Check it before you rely on it:
 curl -s https://<your-site>/api/week | grep storage    # want "storage":"ready"
 ```
 
-Leave Vercel's Development scope empty. `npm run dev` is `next dev` and reads
-your local `.env`, so anything you put there is never read — it is just a second
-readable copy of live secrets. Environment changes need a redeploy
+Leave Vercel's Development scope empty. `npm run dev` in `site/` is `next dev`
+and reads your local `.env`, so anything you put in that scope is never read —
+it is just a second readable copy of live secrets. Environment changes need a redeploy
 (`cd site && vercel --prod --yes`) if the project has no git integration.
 
 **Bind a custom domain to the bucket before you subscribe anyone.** The
