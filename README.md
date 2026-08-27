@@ -127,17 +127,35 @@ lower. `npm run costs` reads the ledger and shows whether caching is working.
 Full walkthrough in **[docs/SETUP.md](docs/SETUP.md)**, or hand
 [AGENTS.md](AGENTS.md) to a coding agent. The short version:
 
-Everything about the listener lives in one place — `SHOWS.<id>.listener` in
-`config/show.mjs`:
+**One list decides everything** — `ROSTER` in `config/show.mjs`, one line per
+child:
 
 ```js
-listener: {
-  grade: 6,
-  age: 'eleven or twelve',
-  pronouns: 'they',   // 'he' | 'she' | 'they'
-  term: 'kiddo',      // rare direct address; '' for none
-}
+export const ROSTER = [
+  { grade: 6, pronouns: 'they', term: 'kiddo', accent: 'sunsets',
+    planFile: 'plans/example-year.json' },
+  { grade: 7, pronouns: 'they', term: 'kiddo', accent: 'deepsea' },
+];
 ```
+
+One entry is a complete configuration. Five is fine too. Nothing else in the
+repository names a grade: the id (`grade6`), the feed path, the title, the
+listener's age, and the ordinal the writer uses ("a sixth grader") are all
+derived from that number, the feed workflow loops over whatever the roster
+defines, and `npm run demo` takes the first entry. So a 4th grader is
+`{ grade: 4 }`, a 10th grader is `{ grade: 10 }`, and next September is one
+digit per child.
+
+Grade 0 is kindergarten. Any derived field can be overridden by naming it on
+the entry — `age: 'ten'` if your school system counts differently.
+
+**If the show will outlive this school year, give each entry an `id`.** The id
+is in the feed URL and every audio key, and it defaults to the grade — so
+bumping `grade: 6` to `7` next September moves the feed, and the subscriber's
+app keeps polling a URL that will never gain another episode. A stable
+`id: 'blue'` (meaningless on purpose; it is public, so never a name) keeps the
+plumbing still while the grade drives the title, the age and the writer's
+brief.
 
 Set `pronouns` and the entire writer's brief agrees, verbs included. It ships as
 `they`, which is right for a child whose pronouns you haven't been told and

@@ -1,3 +1,7 @@
+// Aliased: this file already has its own getShow(), which fetches a show's
+// published manifest from R2. Different job, same obvious name.
+import { showIds, getShow as showConfig, paletteFor } from '../../config/show.mjs';
+
 // The public face.
 //
 // Deliberately impersonal: shows are named by grade, never by child. The feeds
@@ -10,10 +14,20 @@ export const revalidate = 900;
 // Each show carries its own accent, taken from the duotone its artwork is
 // built from, so the page and the cover agree without anyone maintaining two
 // copies of the colour.
-const SHOWS = [
-  { id: 'grade6', label: '6th Grade', cat: 'G-06', tint: '#E68A58' },
-  { id: 'grade7', label: '7th Grade', cat: 'G-07', tint: '#4482A3' },
-];
+// Read from the roster rather than repeated here. Hardcoded, this page kept
+// advertising grade6 and grade7 after somebody configured the repo for their
+// own child — tiles linking to feeds that do not exist, which is a worse
+// failure than no page at all. This is a server component, so importing the
+// pipeline's config is free; nothing here reaches the browser but the strings.
+const SHOWS = showIds().map((id) => {
+  const show = showConfig(id);
+  return {
+    id,
+    label: show.label,
+    cat: `G-${String(show.listener.grade).padStart(2, '0')}`,
+    tint: paletteFor(id).highlight,
+  };
+});
 
 const CLAIMS = [
   'Every fact checked twice, against the page it came from',

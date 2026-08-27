@@ -1,15 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-const SHOWS = [
-  { id: 'grade6', label: '6th Grade' },
-  { id: 'grade7', label: '7th Grade' },
-];
+// The roster arrives from /api/week, which reads the pipeline's config. It was
+// written out here, so the form offered a box per original grade forever — and
+// no box at all for a show somebody added, with nothing to indicate one was
+// missing. Empty until the fetch lands, which is also when `remembered`
+// resolves, so there is no extra round trip and no extra spinner.
 
 export default function Home() {
   const [pw, setPw] = useState('');
   const [week, setWeek] = useState('');
-  const [text, setText] = useState({ grade6: '', grade7: '' });
+  const [shows, setShows] = useState([]);
+  const [text, setText] = useState({});
   const [state, setState] = useState({ status: 'idle' });
   const [remembered, setRemembered] = useState(null); // null = still checking
 
@@ -18,7 +20,10 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/week')
       .then((r) => r.json())
-      .then((d) => setRemembered(Boolean(d.remembered)))
+      .then((d) => {
+        setRemembered(Boolean(d.remembered));
+        setShows(Array.isArray(d.shows) ? d.shows : []);
+      })
       .catch(() => setRemembered(false));
   }, []);
 
@@ -38,7 +43,7 @@ export default function Home() {
     const data = await res.json().catch(() => ({ error: 'server error' }));
     if (!res.ok) return setState({ status: 'error', message: data.error });
     setState({ status: 'saved', week: data.week, saved: data.saved });
-    setText({ grade6: '', grade7: '' });
+    setText({});
     setPw('');
     setRemembered(true); // the server just set the device cookie
   }
@@ -69,13 +74,13 @@ export default function Home() {
           </label>
         </div>
 
-        {SHOWS.map((k) => (
+        {shows.map((k) => (
           <label key={k.id} className="block">
             <span>{k.label}</span>
             <textarea
               rows={9}
               placeholder={`Paste the ${k.label.toLowerCase()} lesson plan email. Subject, topics, vocabulary, whatever the teacher sent — it doesn't need tidying up.`}
-              value={text[k.id]}
+              value={text[k.id] ?? ''}
               onChange={(e) => setText({ ...text, [k.id]: e.target.value })}
             />
           </label>

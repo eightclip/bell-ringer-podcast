@@ -1,3 +1,4 @@
+import { showIds, getShow } from '../../../../config/show.mjs';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
@@ -117,6 +118,11 @@ export async function GET(req) {
     ok: true,
     remembered: hasDeviceCookie(req),
     storage: configured() ? 'ready' : 'missing R2 credentials',
+    // The paste-in page is a client component and cannot read the pipeline's
+    // config itself, so the roster comes down with the status it already
+    // fetches on mount. Hardcoded over there, the form offered a box per
+    // original grade forever — and silently no box for a show somebody added.
+    shows: showIds().map((id) => ({ id, label: getShow(id).label })),
   });
 }
 
