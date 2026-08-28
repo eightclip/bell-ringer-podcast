@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: I built something with this
+    url: https://github.com/eightclip/bell-ringer-podcast/discussions
+    about: Tell me what grade, what subject, and what your kid said. Not an issue — I'd just like to hear it.
+  - name: A security problem
+    url: https://github.com/eightclip/bell-ringer-podcast/blob/main/docs/SECURITY.md
+    about: Read this first — it's honest about where the design is weak on purpose, so it may already be covered. Never put a real feed URL, token or child's details in a report.
