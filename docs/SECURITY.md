@@ -107,3 +107,95 @@ a bad governor. Set billing alerts on every provider anyway.
 
 Found a problem? Open an issue. Please don't include a real feed URL, a real
 token, or a real child's details in it.
+
+## Security headers
+
+The site (`site/`) sends a Content-Security-Policy on every route, built in
+[`site/next.config.mjs`](../site/next.config.mjs) by its `headers()` hook:
+
+```
+default-src 'self';
+base-uri 'self';
+object-src 'none';
+frame-ancestors 'self';
+frame-src 'none';
+form-action 'self';
+script-src 'self' 'unsafe-inline' <posthog-assets-host>;
+style-src 'self' 'unsafe-inline';
+font-src 'self';
+img-src 'self' data: <your R2_PUBLIC_BASE origin>;
+media-src 'self' <your R2_PUBLIC_BASE origin>;
+connect-src 'self' <posthog-host> <posthog-assets-host>;
+manifest-src 'self';
+worker-src 'self' blob:;
+upgrade-insecure-requests
+```
+
+Nothing in it is hardcoded, so there is nothing to edit after you fork:
+
+- **The image and media origin is the origin of your `R2_PUBLIC_BASE`.** That is
+  where the cover art lives. If the build cannot see that variable the two
+  directives fall back to `https:` rather than dropping the origin — a policy
+  that silently blanks the covers is a worse failure than a loose `img-src`. If
+  you want the strict version, make sure `R2_PUBLIC_BASE` is set in the build
+  environment, not only at runtime.
+- **The PostHog entries appear only if `NEXT_PUBLIC_POSTHOG_KEY` is set.** This
+  repo ships no analytics, so by default they are absent entirely. They exist
+  because the upstream private deployment loads PostHog's pinned `array.js`.
+- **`'unsafe-eval'` and `ws:` are added in development only**, for webpack's
+  HMR, and `upgrade-insecure-requests` is omitted there so `http://localhost`
+  still loads. Production gets neither concession.
+
+Everything the site loads was enumerated before the policy was written: fonts
+are self-hosted in `site/public/fonts` (no Google Fonts, no CDN), cover art
+comes from your bucket, and the only browser `fetch` is to same-origin
+`/api/week`. If you add a font service, an embed, or any third-party script,
+you must widen the policy or it will be blocked.
+
+### Added 2026-09-24, and what is deliberately left
+
+An audit of the upstream deployment that day found HSTS, `X-Frame-Options`,
+`X-Content-Type-Options` and `Referrer-Policy` in place and **no CSP at all**.
+This is the fix, and it is the same file in both repositories.
+
+**`script-src` keeps `'unsafe-inline'`.** This is the one real weakness and it
+is a choice. Next's App Router ships its Flight payload as inline `<script>`
+blocks; the strict alternative is a per-request nonce issued from middleware,
+which opts every route out of static generation and costs the home page its
+15-minute ISR. On a site with no user-generated content that is a bad trade.
+Revisit it if your fork renders anything a stranger can supply.
+
+There is no `report-uri`/`report-to` — no endpoint exists to collect reports.
+
+**This repo sets no other headers.** `Strict-Transport-Security`,
+`X-Content-Type-Options`, `X-Frame-Options` and `Referrer-Policy` come from a
+`site/vercel.json` that exists only in the upstream private repo. If you deploy
+this one, add them yourself:
+
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
+    }
+  ]
+}
+```
+
+Headers from `next.config.mjs` and from `vercel.json` compose; neither replaces
+the other. Verified against the live upstream deployment on 2026-09-24, with all
+five present exactly once.
+
+### How it was verified
+
+`cd site && npm run build && npm start`, then headless Chrome against `/`,
+`/admin` and a 404 with a `securitypolicyviolation` listener installed before
+first paint: zero violations and no new console errors on either this repo's
+build or the upstream deployed one, with the upstream run also confirming the
+cover art, all self-hosted font faces, and the feed links still load.

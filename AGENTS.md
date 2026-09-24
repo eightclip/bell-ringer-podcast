@@ -173,6 +173,11 @@ version: the feed is protected by an unguessable URL, not by authentication.
 - **Every stage resumes from whatever output it finds** in `build/`. A stale
   directory will be silently reused. Delete or move it rather than leaving it.
 
+- **This repository is deployed nowhere.** It is the open-source copy; the
+  running show is the private `eightclip/Bell-Ringer`, deployed from there with
+  `cd site && vercel deploy --prod --yes`. Patching the site here to fix
+  something live fixes nothing.
+
 ## 7. Don't
 
 - Don't commit `.env`, real lesson plans, licensed fonts, or music.
