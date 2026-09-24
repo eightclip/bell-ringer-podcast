@@ -110,6 +110,19 @@ token, or a real child's details in it.
 
 ## Security headers
 
+The other five headers come from [`site/vercel.json`](../site/vercel.json), so a fork deployed to
+Vercel gets them without any setup: `Strict-Transport-Security`, `X-Content-Type-Options`,
+`Referrer-Policy`, `X-Frame-Options` and `Permissions-Policy`. Vercel composes these with the
+policy from `next.config.mjs` rather than replacing it, so every route carries all six. On another
+host, set the same headers there.
+
+Check a deployment with:
+
+```bash
+curl -s -D - -o /dev/null https://your-site/ | grep -iE "content-security-policy|strict-transport|x-frame|x-content-type|referrer-policy|permissions-policy"
+```
+
+
 The site (`site/`) sends a Content-Security-Policy on every route, built in
 [`site/next.config.mjs`](../site/next.config.mjs) by its `headers()` hook:
 
