@@ -72,11 +72,6 @@ jobs:
       - name: Render
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          HUME_API_KEY: ${{ secrets.HUME_API_KEY }}
-          HUME_VOICE_DAD: ${{ secrets.HUME_VOICE_DAD }}
-          HUME_VOICE_HOST: ${{ secrets.HUME_VOICE_HOST }}
-          HUME_VOICE_DAD_PROVIDER: CUSTOM_VOICE
-          HUME_VOICE_HOST_PROVIDER: HUME_AI
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -85,7 +80,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           R2_PUBLIC_BASE: ${{ secrets.R2_PUBLIC_BASE }}
           FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
-          VOICE_MODE: ${{ vars.VOICE_MODE || 'hybrid' }}
+          VOICE_MODE: ${{ vars.VOICE_MODE || 'full-stock' }}
         run: node pipeline/run.mjs --all-shows ${{ inputs.week }} ${{ inputs.force && '--force' || '' }}
 
       # Ask the questions a podcast app will ask, over the public internet,

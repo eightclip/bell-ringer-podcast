@@ -45,7 +45,7 @@ Do not guess these. Ask, in one message, and wait:
 | **Pronouns**, term of address, accent, plan file | `config/show.mjs` → the roster entry |
 | Age, id, title, label, tagline, description | derived from the grade — do not hand-write these |
 | Brand name, author, site URL, `parentIs` | `.env` (read by `config/show.mjs` → `BRAND`) |
-| Voice mode and voice ids | `.env` → `VOICE_MODE`, `OPENAI_VOICE*`, `HUME_VOICE_*` |
+| Voice mode and voice ids | `.env` → `VOICE_MODE`, `OPENAI_VOICE*` |
 | Segment order, lengths, acting direction | `config/show.mjs` → `SEGMENTS` |
 | The week's arc (Mon–Fri beats) | `config/show.mjs` → `WEEK_ARC` |
 | Audio chain, loudness, handoff gaps | `config/show.mjs` → `AUDIO` |
@@ -159,9 +159,9 @@ version: the feed is protected by an unguessable URL, not by authentication.
 - **Paragraph breaks are load-bearing.** `spokenOnly()` deliberately preserves
   them; both TTS engines read a blank line as a breath. Do not "tidy" whitespace
   in `lib.mjs`.
-- **`trailingSilence` is Hume-only** and is ignored on OpenAI voices. Gaps
-  between segments live in `AUDIO.voiceChangeGap` / `sameVoiceGap`, applied
-  during assembly where they work for every engine.
+- **Segment `trailingSilence` is not sent to any engine** (it was a Hume
+  parameter). Gaps between segments live in `AUDIO.voiceChangeGap` /
+  `sameVoiceGap`, applied during assembly.
 - **Measure audio, don't trust the config.** ffmpeg's `alimiter` auto-levels *up*
   to its ceiling by default; MP3 reconstructs above what it was handed; and
   single-pass `loudnorm` lands ~2 LU off, so it runs two-pass and prints JSON to

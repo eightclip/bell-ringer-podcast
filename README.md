@@ -108,18 +108,17 @@ the allowlist yourself, in this repo, and you should assume that is a weaker
 guarantee until you have tested it. `pipeline/script.mjs` is a different story —
 it only wants JSON back and would move with little work.
 
-Text-to-speech is genuinely swappable, and voice is the cheapest stage either
-way. See the `VOICE_MODE` table in [docs/SETUP.md](docs/SETUP.md).
+Voices are OpenAI text-to-speech (`gpt-4o-mini-tts`), the cheapest stage of
+the pipeline. See [docs/SETUP.md](docs/SETUP.md).
 
 **Optional**
 
 - ImageMagick — episode artwork; without it you get audio and no covers
 - [Unsplash](https://unsplash.com/developers) — cover photography (free tier is plenty)
-- [Hume](https://platform.hume.ai) — a cloned voice, if you want the show to open in yours
 - Cloudflare R2 + Vercel — only needed to actually publish; the demo needs neither
 
 **Cost.** About **$12 per show per week** at five episodes: ~$10 research, ~$1
-scripts, ~$1.60 voice. The research fetch budget is the lever if you want it
+scripts, ~$0.95 voice. The research fetch budget is the lever if you want it
 lower. `npm run costs` reads the ledger and shows whether caching is working.
 
 ## Making it yours

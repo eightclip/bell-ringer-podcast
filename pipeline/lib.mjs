@@ -207,8 +207,8 @@ export function countWords(s) {
 
 // Strip stage directions so only spoken words reach the TTS engine.
 //
-// Paragraph breaks are PRESERVED, and that is the point. Both OpenAI and Hume
-// read a blank line as a structural boundary and give it breath; collapsing all
+// Paragraph breaks are PRESERVED, and that is the point. The TTS engine
+// reads a blank line as a structural boundary and give it breath; collapsing all
 // whitespace to single spaces — which this used to do — handed the engine a
 // 1000-character wall and threw away every pause the writer had built. An act
 // with nineteen paragraphs was arriving as one. That is the difference between

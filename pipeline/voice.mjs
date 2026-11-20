@@ -7,12 +7,12 @@
 import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, HUME_VOICES, OPENAI_VOICE, OPENAI_TTS_MODEL, VOICE_DIRECTION, AUDIO } from '../config/show.mjs';
+import { getShow, segmentSpec, VOICE_MODE, VOICE_MODES, OPENAI_VOICE, OPENAI_TTS_MODEL, VOICE_DIRECTION, AUDIO } from '../config/show.mjs';
 import { currentWeek, currentShow, weekDir, readJSON, writeJSON, need, step, ok, warn, log, run, ffprobeDuration, fmtDuration, spokenOnly, isMain, ROOT } from './lib.mjs';
 import { scrubNames, privateNames } from './prosody.mjs';
 
 const CACHE = join(ROOT, 'build', '.voice-cache');
-const MAX_CHARS = 1800; // well inside Hume's per-utterance ceiling; keeps retries cheap
+const MAX_CHARS = 1800; // well inside OpenAI's 4096-character input limit; keeps retries cheap
 
 // --- chunking -------------------------------------------------------------
 // Split on explicit pauses and music cues first, then on sentence boundaries.
@@ -60,37 +60,6 @@ export function chunk(text) {
 }
 
 // --- engines --------------------------------------------------------------
-async function humeSay(text, voice, outPath, opts = {}, attempt = 1) {
-  const res = await fetch('https://api.hume.ai/v0/tts/file', {
-    method: 'POST',
-    headers: { 'X-Hume-Api-Key': need('HUME_API_KEY'), 'content-type': 'application/json' },
-    body: JSON.stringify({
-      utterances: [{
-        text,
-        voice: { id: voice.id, provider: voice.provider },
-        // Acting instructions. Octave applies `description` as direction when a
-        // voice is already specified, which is how one clone covers a cold open
-        // and an outro without sounding identical.
-        ...(opts.direction ? { description: opts.direction } : {}),
-        ...(opts.speed ? { speed: opts.speed } : {}),
-        ...(opts.trailingSilence ? { trailing_silence: opts.trailingSilence } : {}),
-      }],
-      format: { type: 'mp3' },
-    }),
-  });
-  if (!res.ok) {
-    const body = (await res.text()).slice(0, 300);
-    if (res.status >= 500 && attempt < 5) {
-      const wait = attempt * 12;
-      warn(`Hume ${res.status} — retrying in ${wait}s (${attempt}/4)`);
-      await new Promise((r) => setTimeout(r, wait * 1000));
-      return humeSay(text, voice, outPath, opts, attempt + 1);
-    }
-    throw new Error(`Hume ${res.status}: ${body}`);
-  }
-  writeFileSync(outPath, Buffer.from(await res.arrayBuffer()));
-}
-
 async function openaiSay(text, role, outPath, attempt = 1, direction = null) {
   const res = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
@@ -116,11 +85,9 @@ async function openaiSay(text, role, outPath, attempt = 1, direction = null) {
   writeFileSync(outPath, Buffer.from(await res.arrayBuffer()));
 }
 
-async function say(text, { engine, role, direction, speed, trailingSilence }, outPath) {
+async function say(text, { engine, role, direction }, outPath) {
   if (engine === 'openai') return openaiSay(text, role, outPath, 1, direction);
-  const voice = HUME_VOICES[engine]?.();
-  if (!voice?.id) throw new Error(`No Hume voice for engine "${engine}" — set HUME_VOICE_DAD / HUME_VOICE_HOST in .env`);
-  return humeSay(text, voice, outPath, { direction, speed, trailingSilence });
+  throw new Error(`Unknown voice engine "${engine}" — Hume was retired 2026-11-13; use VOICE_MODE=full-stock`);
 }
 
 // --- silence --------------------------------------------------------------
@@ -183,13 +150,13 @@ export async function voiceWeek(showId, week) {
           continue;
         }
         // Cache key covers the text AND the voice, so switching modes re-renders.
-        const key = createHash('sha256').update(`${engine}|${seg.role}|${OPENAI_VOICE}|${JSON.stringify(HUME_VOICES[engine]?.() || '')}|${spec.direction || ''}|${spec.speed || ''}|${p.text}`).digest('hex').slice(0, 24);
+        const key = createHash('sha256').update(`${engine}|${seg.role}|${OPENAI_VOICE}|""|${spec.direction || ''}|${spec.speed || ''}|${p.text}`).digest('hex').slice(0, 24);
         const cachePath = join(CACHE, `${key}.mp3`);
         if (existsSync(cachePath)) {
           writeFileSync(out, readFileSync(cachePath));
           cached++;
         } else {
-          await say(p.text, { engine, role: seg.role, direction: spec.direction, speed: spec.speed, trailingSilence: spec.trailingSilence }, out);
+          await say(p.text, { engine, role: seg.role, direction: spec.direction }, out);
           writeFileSync(cachePath, readFileSync(out));
           chars += p.text.length;
           byEngine[engine] = (byEngine[engine] || 0) + p.text.length;
@@ -211,7 +178,7 @@ export async function voiceWeek(showId, week) {
         //
         // The demuxer requires every input to share stream parameters, and here
         // they never did: OpenAI returns 24 kHz mp3, generated silence was made
-        // at 44.1 kHz, and Hume returns something else again. Splicing across
+        // at 44.1 kHz, and other engines return something else again. Splicing across
         // that parameter change put an audible click at every [PAUSE] — right
         // where a deliberate silence was supposed to make a line land, which is
         // the worst possible place for one. Trailing -ar on the encoder did not
@@ -245,11 +212,10 @@ export async function voiceWeek(showId, week) {
     manifest.push({ part: ep.arc.part, day: ep.arc.day, title: ep.title, teaser: ep.teaser, segments: segs, speech_seconds: total });
   }
 
-  // Hume bills per character (~$0.12/1k on Creator); OpenAI per audio token,
-  // which works out around a fifth of that. Reporting one blended number was
-  // misleading in hybrid mode, where most characters go to the cheap engine.
-  const RATE = { hume: 0.12 / 1000, 'hume-host': 0.12 / 1000, openai: 0.025 / 1000 };
-  const est = Object.entries(byEngine).reduce((n, [e, c]) => n + c * (RATE[e] ?? 0.12 / 1000), 0);
+  // OpenAI bills per audio token, which works out around $0.025/1k characters.
+  // Per engine so a new engine shows up as its own line rather than a blend.
+  const RATE = { openai: 0.025 / 1000 };
+  const est = Object.entries(byEngine).reduce((n, [e, c]) => n + c * (RATE[e] ?? 0.025 / 1000), 0);
   const split = Object.entries(byEngine).map(([e, c]) => `${e} ${c.toLocaleString()}`).join(', ') || 'none';
   // Merge into any existing manifest so a single-part render doesn't discard
   // the episodes that were already voiced.

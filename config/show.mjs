@@ -272,10 +272,10 @@ export const WEEK_ARC = [
 // One kid means one subject, so the two acts are now a teach and a turn rather
 // than one act per brother.
 
-// `direction` is sent to Octave as acting instructions. With a voice already
-// specified, the description steers the performance rather than inventing a
-// new voice — so the same clone can open cold and land an outro differently.
-// `speed` is Octave's non-linear rate (0.5 slow — 2.0 fast); 1.0 is normal.
+// `direction` is sent to OpenAI as `instructions`, on top of the role's
+// VOICE_DIRECTION — so the same voice can open cold and land an outro differently.
+// `speed` and `trailingSilence` are no longer sent to any engine (they were
+// Hume parameters); `speed` stays because it is part of the voice cache key.
 export const SEGMENTS = [
   { id: 'cold_open',   seconds: 20,  voice: 'parent',  music: null,         label: 'Cold open — the hook',
     direction: 'Quiet and close, like the first thing said after the radio goes off. Land the first sentence and let it sit. Curious, not dramatic — never announce.',
@@ -302,14 +302,8 @@ export const segmentSpec = (id) => SEGMENTS.find((s) => s.id === id);
 export const TARGET_SECONDS = SEGMENTS.reduce((n, s) => n + s.seconds, 0); // 655s ≈ 10:55
 
 // Spoken-word pacing, measured rather than assumed — the two voices are not
-// close. A first full render clocked the clone at 160 wpm and the library
-// narrator at 215, so a single figure wrote the acts a third too short.
-//
-// Octave's `speed` turned out to be a weak lever on the library voice —
-// 1.00, 0.85, 0.78 and 0.70 measured 182, 200, 181 and 172 wpm, which is mostly
-// noise around 180. Rather than fight it, the host moved to OpenAI, which
-// narrates at 155-164 wpm without being asked and costs a fifth as much.
-// The parent voice stays on the clone. Re-measure if either voice changes.
+// always close, so a single figure writes some segments too short or too long.
+// OpenAI narrates at 155-164 wpm without being asked. Re-measure if a voice changes.
 export const WORDS_PER_MINUTE = { parent: 160, narrator: 157 };
 
 export function wordBudget(seconds, role = 'narrator') {
@@ -321,37 +315,15 @@ export function wordBudget(seconds, role = 'narrator') {
 // Two voices is not a nicety — even eleven minutes of one synthetic voice is
 // wearing. The PARENT voice opens and closes; the NARRATOR carries the teach.
 //
-// The roles are named for their job, not for who fills them. The parent voice
-// is whoever is doing the school run — clone your own voice, or use a stock one.
+// The roles are named for their job, not for who fills them.
 //
-// full-stock — both roles on OpenAI. One API key, cheapest, and the default.
-// hybrid     — your cloned voice as the parent, stock narrator. ~$1.30/week.
-// duo-hume   — two Hume voices.
-// full-hume  — everything on Hume. Roughly 3.5x full-stock.
+// full-stock — both roles on OpenAI (gpt-4o-mini-tts). One API key, and the
+// only mode. Hume, the old cloned-voice option, retired its TTS API on 2026-11-13.
 
 export const VOICE_MODES = {
-  'full-stock': { parent: 'openai', narrator: 'openai' },      // no Hume account needed
-  hybrid:       { parent: 'hume',   narrator: 'openai' },      // your voice hosts, stock narrates
-  'duo-hume':   { parent: 'hume',   narrator: 'hume-narrator' },
-  'full-hume':  { parent: 'hume',   narrator: 'hume' },
+  'full-stock': { parent: 'openai', narrator: 'openai' },
 };
 
-// Each voice carries its own provider: a cloned voice is CUSTOM_VOICE, one from
-// Hume's library is HUME_AI. Sending the wrong provider is a 404 that reads
-// like the voice was deleted.
-export const HUME_VOICES = {
-  hume: () => ({
-    id: process.env.HUME_VOICE_PARENT || process.env.HUME_VOICE_ID,
-    provider: process.env.HUME_VOICE_PARENT_PROVIDER || 'CUSTOM_VOICE',
-  }),
-  'hume-narrator': () => ({
-    id: process.env.HUME_VOICE_NARRATOR || process.env.HUME_VOICE_PARENT,
-    provider: process.env.HUME_VOICE_NARRATOR_PROVIDER || process.env.HUME_VOICE_PARENT_PROVIDER || 'CUSTOM_VOICE',
-  }),
-};
-
-// full-stock is the default: it needs one API key and no cloned voice, so a
-// fresh clone works before anyone has signed up for anything else.
 export const VOICE_MODE = process.env.VOICE_MODE || 'full-stock';
 
 export function voiceEngineFor(role) {
@@ -406,8 +378,8 @@ export const AUDIO = {
   // arrived back to back, so the turn landed like an edit rather than a
   // handover.
   //
-  // Segment `trailingSilence` did not cover this: it is a Hume parameter, so it
-  // applied to the parent and was ignored on the OpenAI-voiced acts. Putting
+  // Segment `trailingSilence` did not cover this: it was a Hume-only parameter,
+  // ignored on the OpenAI-voiced acts. Putting
   // the gap here instead makes it engine-independent — it is an edit decision,
   // not a synthesis one, and it belongs with the other edit decisions.
   //

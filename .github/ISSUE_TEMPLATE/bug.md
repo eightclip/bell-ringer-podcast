@@ -22,7 +22,6 @@ publish, feed, or the site.
 
 - OS and Node version (`node --version`)
 - `ffmpeg -version | head -1`
-- Voice mode (`full-stock`, `hybrid`, `duo-hume`, `full-hume`)
 - Roster: how many shows, which grades
 
 **Before you post,** please check there is no API key, feed token, ingest

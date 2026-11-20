@@ -68,10 +68,10 @@ function preflight() {
     problems.push('ANTHROPIC_API_KEY is not set. Research and scripts need it. https://console.anthropic.com');
 
   const mode = process.env.VOICE_MODE || 'full-stock';
-  if (mode === 'full-stock' && !process.env.OPENAI_API_KEY)
+  if (mode !== 'full-stock')
+    problems.push(`VOICE_MODE=${mode} is not supported any more (Hume retired its TTS API). Set VOICE_MODE=full-stock.`);
+  if (!process.env.OPENAI_API_KEY)
     problems.push('OPENAI_API_KEY is not set. https://platform.openai.com');
-  if (mode !== 'full-stock' && !process.env.HUME_API_KEY)
-    problems.push(`VOICE_MODE=${mode} needs HUME_API_KEY. Set VOICE_MODE=full-stock to use OpenAI only.`);
 
   if (!have('ffmpeg')) problems.push('ffmpeg not found on PATH.  macOS: brew install ffmpeg');
   if (!have('ffprobe')) problems.push('ffprobe not found on PATH (it ships with ffmpeg).');

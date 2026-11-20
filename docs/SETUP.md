@@ -46,39 +46,21 @@ real plans are gitignored.
 
 ## 3. Voice
 
-`VOICE_MODE` in `.env`:
+The show uses OpenAI text-to-speech (`gpt-4o-mini-tts`) and needs only
+`OPENAI_API_KEY`. `VOICE_MODE` is `full-stock`, the default and only mode.
 
 The show has two roles, named for the job rather than for who fills it:
 **PARENT** (cold open, welcome, outro) and **NARRATOR** (both acts).
 
-| Mode | Parent | Narrator | Cost/week | Needs |
-|---|---|---|---|---|
-| `full-stock` | OpenAI | OpenAI | ~$0.95 | `OPENAI_API_KEY` |
-| `hybrid` | your clone | OpenAI | ~$1.35 | both keys |
-| `duo-hume` | your clone | Hume library | ~$4 | `HUME_API_KEY` |
-| `full-hume` | Hume | Hume | ~$4.50 | `HUME_API_KEY` |
-
-Measured, not guessed: Hume bills ~$0.12/1k characters, OpenAI ~$0.025/1k, and
-a five-episode week is about 38k characters.
-
-`hybrid` is what the show this came from runs. Cloning your own voice for the
-parent role costs about forty cents a week more than `full-stock`, and it is the
-single thing that makes it sound like a family's show rather than a product. On
-`full-stock`, set `OPENAI_VOICE_NARRATOR` to something different from
-`OPENAI_VOICE` so it isn't one voice for eleven minutes.
+Measured, not guessed: OpenAI bills ~$0.025/1k characters, and a five-episode
+week is about 38k characters — roughly $0.95 a week. Set
+`OPENAI_VOICE_NARRATOR` to something different from `OPENAI_VOICE` so it isn't
+one voice for eleven minutes.
 
 Pacing is measured per voice, not assumed — see `WORDS_PER_MINUTE` in
-`config/show.mjs`. If you swap a voice, re-measure. On the reference setup the
-clone ran 160 wpm and a library voice ran 215, which is too fast for a child to
-follow, and the `speed` parameter did not fix it: 1.00/0.85/0.78/0.70 measured
-182/200/181/172 wpm. That is noise, not control. Word budgets per segment are
+`config/show.mjs`. If you swap a voice, re-measure. Word budgets per segment are
 derived from the measured rate, which is why episodes land near eleven minutes
 instead of drifting.
-
-Hume providers are per voice: a clone is `CUSTOM_VOICE`, a library voice is
-`HUME_AI`. Sending the wrong one returns a 404 that reads like the voice was
-deleted. The variables are `HUME_VOICE_PARENT` / `HUME_VOICE_NARRATOR` and their
-`_PROVIDER` counterparts.
 
 ## 4. Music
 
@@ -154,7 +136,7 @@ Two workflows, both needing repository secrets:
   what releases that morning's episode. Audio was uploaded days earlier; the
   rebuild just makes it visible.
 
-Push `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `HUME_*`, `UNSPLASH_ACCESS_KEY`,
+Push `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `UNSPLASH_ACCESS_KEY`,
 `R2_*`, and `FEED_TOKEN` as Actions secrets.
 
 **Your music does not reach the runner, and nothing tells you.** `*.mp3` is
